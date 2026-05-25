@@ -1,0 +1,17 @@
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Node (kept for compatibility — we have no node_modules today)
+node_modules/
+
+# Test artefacts
+/tmp/zealer-test.txt
+
+# Local-only credential files
+.env
+.env.local

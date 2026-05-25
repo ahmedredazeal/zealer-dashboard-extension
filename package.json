@@ -1,0 +1,9 @@
+{
+  "name": "zealer-dashboard-extension",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/parsers.test.js && node tests/burndown.test.js && node tests/burndown-algorithm.test.js && node tests/sentry-trend.test.js && node tests/worklog-aggregator.test.js && node tests/integration.test.js",
+    "preflight": "bash pre-flight.sh"
+  }
+}

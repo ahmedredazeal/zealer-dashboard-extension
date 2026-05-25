@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="theme-loader.js"></script>
+  <meta charset="UTF-8"/>
+  <title>Zealer Dashboard — Changelog</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .cl-row { margin-bottom:20px; }
+    .cl-ver { font-size:14px; font-weight:600; color:var(--text); margin-bottom:4px; }
+    .cl-ver.major { color:var(--primary); }
+    .cl-desc { font-size:13px; color:var(--text-muted); line-height:1.6; }
+    .cl-date { font-size:11px; color:var(--text-lighter); margin-left:6px; font-weight:400; }
+  </style>
+</head>
+<body class="settings-body">
+  <div class="settings-wrap">
+    <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
+
+    <div class="cl-row">
+      <div class="cl-ver major">v0.0.1 <span class="cl-date">2026-05-25</span></div>
+      <div class="cl-desc">
+        <strong>Phase 0 bootstrap:</strong> repo scaffolding, MV3 side panel, working settings page (Jira + Sentry test connections, Sprint config, theme swatches), Leapsome &amp; Google Calendar reserved as 🔮 Coming soon. Jira "Test connection" caches accountId + displayName so the popup greets the engineer by name. Carries over 154 unit tests from EM Dashboard (parsers, burndown, sentry-trend, worklog-aggregator, integration).
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
