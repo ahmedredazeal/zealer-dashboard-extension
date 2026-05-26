@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver major">v0.1.0 <span class="cl-date">2026-05-26</span></div>
+      <div class="cl-desc">
+        <strong>Phase 2 — My Tickets:</strong> live Jira data fetch on panel open (stale-while-revalidate). Current Sprint section with full EM-style header (name · Xpt done/total · Day X/Y), mini stacked progress bar, at-risk prediction, collapsible ticket list. My Tickets section filtered to the engineer's own assigned tickets — priority dot, summary, key·pt·due, status badge, click opens Jira in new tab. Context bar with project key badge, sprint name, 30-min auto-refresh countdown + manual refresh button. New <code>src/ticket-render.js</code> module (48 tests). <code>tabs</code> permission added.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver major">v0.0.1 <span class="cl-date">2026-05-25</span></div>
       <div class="cl-desc">
         <strong>Phase 0 bootstrap:</strong> repo scaffolding, MV3 side panel, working settings page (Jira + Sentry test connections, Sprint config, theme swatches), Leapsome &amp; Google Calendar reserved as 🔮 Coming soon. Jira "Test connection" caches accountId + displayName so the popup greets the engineer by name. Carries over 154 unit tests from EM Dashboard (parsers, burndown, sentry-trend, worklog-aggregator, integration).

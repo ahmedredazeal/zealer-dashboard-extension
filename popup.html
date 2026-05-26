@@ -8,82 +8,146 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png"/>
   <link rel="icon" type="image/png" sizes="16x16" href="icons/icon16.png"/>
   <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .section-loading-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; color: var(--primary, #6366f1);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .section-loading-pill.visible { opacity: 1; }
+    .section-loading-pill::before {
+      content: ''; display: inline-block; width: 6px; height: 6px;
+      border-radius: 50%; background: var(--primary, #6366f1);
+      animation: section-pulse 1s ease-in-out infinite;
+    }
+    @keyframes section-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+    .ticket-row:last-child { border-bottom: none !important; }
+    .ticket-row:hover { background: var(--surface-raised, rgba(255,255,255,0.03)); border-radius: 4px; }
+  </style>
 </head>
 <body>
 
-  <!-- App bar (sticky, always visible) -->
+  <!-- App bar (sticky) -->
   <div class="app-bar">
     <div class="app-bar-left">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;">
         <rect x="3" y="3" width="7" height="7" rx="1.5" fill="#2563EB"/>
         <rect x="3" y="14" width="7" height="7" rx="1.5" fill="#2563EB"/>
         <rect x="14" y="3" width="7" height="7" rx="1.5" fill="#60a5fa"/>
         <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#60a5fa"/>
       </svg>
       <span class="app-bar-title">Zealer Dashboard</span>
-      <span class="app-bar-version" id="app-version">v0.0.1</span>
+      <span class="app-bar-version" id="app-version">v0.1.0</span>
     </div>
     <div class="app-bar-right">
       <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
     </div>
   </div>
 
-  <!-- Greeting / auth state -->
-  <div class="screen-body">
+  <!-- Context bar (sticky, hidden until data loads) -->
+  <div class="context-bar empty" id="context-bar">
+    <span class="context-key" id="context-key" style="display:none;"></span>
+    <span class="context-separator" id="context-sep-1" style="display:none;">·</span>
+    <span class="context-sprint" id="context-sprint"></span>
+    <span class="context-spacer"></span>
+    <span id="refresh-countdown"
+          title="Next auto-refresh"
+          style="display:none;font-size:11px;color:var(--text-muted);
+                 font-variant-numeric:tabular-nums;letter-spacing:0.2px;margin-right:4px;"></span>
+    <button class="icon-btn" id="context-refresh" title="Refresh now" style="display:none;">↻</button>
+  </div>
 
-    <!-- AUTH SCREEN — shown when Jira identity is not yet resolved -->
-    <div id="screen-auth" class="hidden" style="text-align:center;padding-top:48px;">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style="margin-bottom:14px;">
-        <rect x="3" y="3" width="7" height="7" rx="1" fill="#2563EB"/>
-        <rect x="3" y="14" width="7" height="7" rx="1" fill="#2563EB"/>
-        <rect x="14" y="3" width="7" height="7" rx="1" fill="#60a5fa"/>
-        <rect x="14" y="14" width="7" height="7" rx="1" fill="#60a5fa"/>
-      </svg>
-      <h2 style="font-size:17px;font-weight:600;margin-bottom:6px;">Hello, engineer 👋</h2>
-      <p style="font-size:13px;color:var(--text-muted);max-width:280px;margin:0 auto 18px;line-height:1.5;">
-        Connect your Jira account to start seeing your sprint and tickets here.
-      </p>
-      <button id="open-settings-btn" class="btn-primary" style="font-size:13px;">
-        Open settings →
-      </button>
+  <!-- Screen container -->
+  <div id="screen-container">
+
+    <!-- AUTH SCREEN -->
+    <div class="screen hidden" id="screen-auth">
+      <div class="screen-body" style="text-align:center;padding-top:60px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="margin-bottom:16px;">
+          <rect x="3" y="3" width="7" height="7" rx="1" fill="#2563EB"/>
+          <rect x="3" y="14" width="7" height="7" rx="1" fill="#2563EB"/>
+          <rect x="14" y="3" width="7" height="7" rx="1" fill="#60a5fa"/>
+          <rect x="14" y="14" width="7" height="7" rx="1" fill="#60a5fa"/>
+        </svg>
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:8px;">Hello, engineer 👋</h2>
+        <p id="auth-message" style="font-size:13px;color:var(--text-muted);
+                                     max-width:280px;margin:0 auto 24px;line-height:1.5;">
+          Connect your Jira account to get started.
+        </p>
+        <button class="btn-primary" id="auth-goto-settings">Open settings →</button>
+      </div>
     </div>
 
-    <!-- HOME SCREEN — shown once identity is resolved -->
-    <div id="screen-home" class="hidden">
-      <div class="card">
-        <div class="card-title" id="greeting">Hello, engineer</div>
-        <div class="card-subtitle" id="greeting-sub">
-          Phase 0 scaffolding — data sections arrive in upcoming phases.
-        </div>
-      </div>
+    <!-- HOME SCREEN -->
+    <div class="screen hidden" id="screen-home">
+      <div class="screen-body">
 
-      <!-- Future-Plan placeholders so the section shape is visible -->
-      <div class="section">
-        <div class="section-label">My Day · 🔮 coming in Phase 4</div>
-        <div class="card">
-          <div class="card-subtitle">Today's calendar &amp; absence will appear here.</div>
-        </div>
-      </div>
+        <!-- CURRENT SPRINT — expanded by default -->
+        <div class="section" id="current-sprint-section">
+          <div id="sprint-section-header"
+               class="section-label"
+               style="display:flex;align-items:center;justify-content:space-between;
+                      cursor:pointer;user-select:none;">
+            <span id="current-sprint-title">Current Sprint</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="section-loading-pill" id="sprint-loading-pill">Refreshing</span>
+              <span id="current-sprint-total"
+                    style="font-size:11px;font-weight:600;color:var(--text-muted);"></span>
+              <span id="sprint-section-chevron"
+                    style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+            </div>
+          </div>
 
-      <div class="section">
-        <div class="section-label">Insights · 🔮 coming in Phase 3</div>
-        <div class="card">
-          <div class="card-subtitle">Sprint progress, burndown, support board, time logged, estimate-vs-actual, Sentry trend.</div>
+          <div id="sprint-glance-body" style="margin-top:8px;">
+            <!-- Sprint mini progress bar -->
+            <div id="sprint-glance-ticket-counts" style="margin-bottom:10px;"></div>
+            <!-- Ticket list -->
+            <div id="sprint-story-list"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="section">
-        <div class="section-label">My Tickets · 🔮 coming in Phase 2</div>
-        <div class="card">
-          <div class="card-subtitle">Tickets assigned to you in the active sprint.</div>
+        <!-- MY TICKETS — filtered to assignee = me -->
+        <div class="section" id="my-tickets-section">
+          <div id="my-tickets-header"
+               class="section-label"
+               style="display:flex;align-items:center;justify-content:space-between;
+                      cursor:pointer;user-select:none;">
+            <span>My Tickets</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span id="my-tickets-total"
+                    style="font-size:11px;font-weight:600;color:var(--text-muted);"></span>
+              <span id="my-tickets-chevron"
+                    style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+            </div>
+          </div>
+          <div id="my-tickets-body" style="margin-top:4px;">
+            <div id="my-tickets-list"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="section">
-        <div class="section-label">My Goals · 🔮 coming in Phase 5</div>
-        <div class="card">
-          <div class="card-subtitle">Leapsome OKRs and dev-plan items.</div>
+        <!-- MY DAY placeholder (Phase 4) -->
+        <div class="section">
+          <div class="section-label">My Day <span style="font-size:9px;color:var(--primary);
+               background:var(--surface-raised);padding:1px 6px;border-radius:10px;
+               margin-left:4px;font-weight:500;">🔮 Phase 4</span></div>
+          <div class="card">
+            <div class="card-subtitle">Today's calendar &amp; absence will appear here.</div>
+          </div>
         </div>
+
+        <!-- MY GOALS placeholder (Phase 5) -->
+        <div class="section">
+          <div class="section-label">My Goals <span style="font-size:9px;color:var(--primary);
+               background:var(--surface-raised);padding:1px 6px;border-radius:10px;
+               margin-left:4px;font-weight:500;">🔮 Phase 5</span></div>
+          <div class="card">
+            <div class="card-subtitle">Leapsome OKRs and dev-plan items.</div>
+          </div>
+        </div>
+
       </div>
     </div>
 

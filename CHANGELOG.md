@@ -1,5 +1,45 @@
 # Changelog
 
+## v0.1.0 (2026-05-26) — Phase 2: My Tickets
+
+**Added:**
+- Sprint data fetch on panel open (stale-while-revalidate): active sprint via
+  `getActiveSprint(boardId)` then all sprint issues via `POST /rest/api/3/search/jql`
+  scoped to the configured board's sprint ID.
+- **Current Sprint section** — full EM-style header: sprint name, completed/total
+  points, Day X/Y in working days, mini stacked progress bar (Done% / In flight /
+  Open), at-risk prediction (`⚠ need N.Npt/d`) using the carried `sprintBurndownPrediction`
+  from `src/metrics.js`. Collapsible with chevron, expanded by default.
+- **My Tickets section** — tickets filtered to `assigneeAccountId === accountId`
+  (the identity cached by the Settings page Jira Test). Ticket rows: priority dot,
+  summary (1-line ellipsis), `PROJ-123 · Npt · 📅 due`, status badge. Click opens
+  Jira issue in a new tab.
+- **Context bar** — project key badge (derived from sprint name / story keys),
+  sprint name, 30-min auto-refresh countdown, manual ↻ refresh button.
+- **Refresh timer** — mirrors EM Dashboard: 0–5 min shows elapsed ("just now" /
+  "Nm ago"), 5–30 min shows countdown to next auto-refresh, fires refresh at 0.
+- `src/ticket-render.js` — new pure-function module: `escapeHtml`, `priorityDot`,
+  `ticketStatusColor`, `ticketStatusIcon`, `formatDueDate`, `renderTicketRow`,
+  `buildMiniProgressBar`, `deriveProjectKey`, `countWorkingDays`, `sprintDayMetrics`.
+  DOM-free (string-replace escaping) so it runs in Node.js tests.
+- `tests/ticket-render.test.js` — 48 unit tests covering all helpers.
+- `tabs` permission added to manifest for `chrome.tabs.create` (ticket click → new tab).
+- Error banner shown when fetch fails with stale cache available (stale data stays
+  visible; banner is dismissible by a successful refresh).
+- Auth screen now shows context-specific messages: "connect Jira" vs "set board ID".
+
+**Changed:**
+- `popup.html` — replaced Phase 3+ placeholder cards with the live sprint and
+  my-tickets sections; My Day and My Goals placeholders remain with phase badges.
+- `popup.js` — fully rewritten for Phase 2 data flow.
+- `manifest.json` — version bumped to 0.1.0; `tabs` permission added.
+- `pre-flight.sh` — `ticket-render.js` and `ticket-render.test.js` added to
+  required-files and test-file lists.
+
+**Tests:** 202 total (154 carried + 48 new), all passing.
+
+---
+
 ## v0.0.1 (2026-05-25) — Phase 0 bootstrap
 
 **Added:**

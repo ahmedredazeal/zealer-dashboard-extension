@@ -143,6 +143,7 @@ REQUIRED_FILES=(
   "src/privacy-mode.js"
   "src/sprint-cache.js"
   "src/changelog-parser.js"
+  "src/ticket-render.js"
   "src/migrations.js"
 )
 MISSING=0
@@ -202,6 +203,7 @@ TEST_FILES=(
   "tests/sentry-trend.test.js"
   "tests/worklog-aggregator.test.js"
   "tests/integration.test.js"
+  "tests/ticket-render.test.js"
 )
 TOTAL_PASS=0
 TOTAL_FAIL=0
