@@ -305,7 +305,7 @@ async function boot() {
 
   if (!settings.jira?.token) {
     document.getElementById('auth-message').textContent =
-      'Connect your Jira account to get started.';
+      'Link your accounts, to get started.';
     showScreen('screen-auth');
     return;
   }

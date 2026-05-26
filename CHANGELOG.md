@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.1.1 (2026-05-26) — Copy + backlog
+
+**Changed:**
+- Auth screen: "Hello, engineer 👋" → "Hello, Zealer 👋".
+- Auth screen subtitle: "Connect your Jira account to get started." →
+  "Link your accounts, to get started."
+
+**Added:**
+- `BACKLOG.md` — living task list covering all planned phases and polish items.
+  Items graduate to `CHANGELOG.md` on ship; no more phase detail living only
+  in chat history.
+
+---
+
 ## v0.1.0 (2026-05-26) — Phase 2: My Tickets
 
 **Added:**
