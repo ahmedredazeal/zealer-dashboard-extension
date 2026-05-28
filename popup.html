@@ -56,7 +56,7 @@
         <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#60a5fa"/>
       </svg>
       <span class="app-bar-title">Zealer Dashboard</span>
-      <span class="app-bar-version" id="app-version">v0.2.1</span>
+      <span class="app-bar-version" id="app-version">v0.2.2</span>
     </div>
     <div class="app-bar-right">
       <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
@@ -101,46 +101,27 @@
     <div class="screen hidden" id="screen-home">
       <div class="screen-body">
 
-        <!-- ── INSIGHTS ─────────────────────────────────────────────── -->
-        <div class="section" id="insights-section">
-          <div id="insights-section-header"
+        <!-- ── SQUAD INSIGHTS ────────────────────────────────────── -->
+        <div class="section" id="squad-insights-section">
+          <div id="squad-insights-header"
                class="section-label"
                style="display:flex;align-items:center;justify-content:space-between;
                       cursor:pointer;user-select:none;">
-            <span>INSIGHTS</span>
+            <span>SQUAD INSIGHTS</span>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span class="section-loading-pill" id="insights-loading-pill">Refreshing</span>
-              <span id="insights-section-chevron" style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+              <span class="section-loading-pill" id="squad-loading-pill">Refreshing</span>
+              <span id="squad-insights-chevron" style="color:var(--text-muted);font-size:12px;">&#9660;</span>
             </div>
           </div>
 
-          <div id="insights-body" style="margin-top:8px;">
-            <!-- Sprint progress bar (full width) -->
+          <div id="squad-insights-body" style="margin-top:8px;">
+            <!-- Sprint progress bar (full width, all sprint stories) -->
             <div id="sprint-progress-container"></div>
 
-            <!-- Row 1: Burndown | Support board -->
+            <!-- Row: Burndown | Support Board -->
             <div class="chart-row">
               <div id="burndown-container"></div>
               <div id="support-board-container"></div>
-            </div>
-
-            <!-- Time filter toggle -->
-            <div class="timefilter-bar" id="time-filter-buttons" style="margin-top:4px;">
-              <button class="timefilter-btn active" data-filter="sprint">Sprint</button>
-              <button class="timefilter-btn" data-filter="Q1">Q1</button>
-              <button class="timefilter-btn" data-filter="Q2">Q2</button>
-              <button class="timefilter-btn" data-filter="Q3">Q3</button>
-              <button class="timefilter-btn" data-filter="Q4">Q4</button>
-            </div>
-
-            <!-- Row 2: Time logged | Estimate vs Actual -->
-            <!-- In quarter mode: time logged goes full-width, est vs actual is hidden -->
-            <div id="time-row-sprint" class="chart-row">
-              <div id="time-logged-container"></div>
-              <div id="est-vs-actual-container"></div>
-            </div>
-            <div id="time-row-quarter" style="display:none;">
-              <div id="quarter-time-logged-container"></div>
             </div>
 
             <!-- Sentry trend (full width) -->
@@ -148,7 +129,43 @@
           </div>
         </div>
 
-        <!-- ── MY TICKETS ────────────────────────────────────────────── -->
+        <!-- ── INDIVIDUAL INSIGHTS ────────────────────────────────── -->
+        <div class="section" id="individual-insights-section">
+          <div id="individual-insights-header"
+               class="section-label"
+               style="display:flex;align-items:center;justify-content:space-between;
+                      cursor:pointer;user-select:none;">
+            <span>INDIVIDUAL INSIGHTS</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="section-loading-pill" id="individual-loading-pill">Loading</span>
+              <span id="individual-insights-chevron" style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+            </div>
+          </div>
+
+          <div id="individual-insights-body" style="margin-top:8px;">
+            <!-- Time filter toggle -->
+            <div class="timefilter-bar" id="time-filter-buttons">
+              <button class="timefilter-btn active" data-filter="sprint">Sprint</button>
+              <button class="timefilter-btn" data-filter="Q1">Q1</button>
+              <button class="timefilter-btn" data-filter="Q2">Q2</button>
+              <button class="timefilter-btn" data-filter="Q3">Q3</button>
+              <button class="timefilter-btn" data-filter="Q4">Q4</button>
+            </div>
+
+            <!-- Sprint mode: Time Logged | Estimate vs Actual -->
+            <div id="time-row-sprint" class="chart-row">
+              <div id="time-logged-container"></div>
+              <div id="est-vs-actual-container"></div>
+            </div>
+
+            <!-- Quarter mode: Time Logged full-width -->
+            <div id="time-row-quarter" style="display:none;">
+              <div id="quarter-time-logged-container"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── MY TICKETS ────────────────────────────────────────── -->
         <div class="section" id="my-tickets-section">
           <div id="my-tickets-header"
                class="section-label"
@@ -166,7 +183,7 @@
           </div>
         </div>
 
-        <!-- ── GANTT placeholder (Phase 3b) ─────────────────────────── -->
+        <!-- ── GANTT placeholder (Phase 3b) ─────────────────────── -->
         <div class="section">
           <div class="section-label">
             Gantt
@@ -178,7 +195,7 @@
           </div>
         </div>
 
-        <!-- ── MY DAY placeholder (Phase 4) ─────────────────────────── -->
+        <!-- ── MY DAY placeholder (Phase 4) ─────────────────────── -->
         <div class="section">
           <div class="section-label">
             My Day
@@ -190,7 +207,7 @@
           </div>
         </div>
 
-        <!-- ── MY GOALS placeholder (Phase 5) ───────────────────────── -->
+        <!-- ── MY GOALS placeholder (Phase 5) ───────────────────── -->
         <div class="section">
           <div class="section-label">
             My Goals

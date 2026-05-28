@@ -158,7 +158,7 @@ async function fetchInsightsData(settings, sprint, spf) {
   return { storiesHeavy, worklogs, estVsActual, rawIssues };
 }
 
-/** Support board fetch (optional). */
+/** Support board fetch — uses board issues API, works for Kanban and Scrum. */
 async function fetchSupportData(settings) {
   const sbId = settings.sprint?.supportBoardId;
   if (!sbId) return [];
@@ -168,10 +168,17 @@ async function fetchSupportData(settings) {
   const spf    = settings._cachedSpf?.[settings.sprint.boardId] || 'customfield_10016';
 
   try {
-    const sprint = await client.getActiveSprint(sbId);
-    const jql    = `sprint = ${sprint.id} AND issuetype not in subTaskIssueTypes() AND status not in (Done, "QA Accepted")`;
-    const result = await client._search({ jql, fields: ['summary','status','labels','priority'], maxResults: 100 });
-    return (result.issues || []).map(i => normalizeStory(i, spf));
+    // Use the Agile board issues endpoint — no sprint required (Kanban-safe).
+    // JQL filters out terminal statuses; everything else is "open".
+    const notDone = encodeURIComponent(
+      'status not in (Done,"QA Accepted",Closed,Resolved,"Won\'t Fix","Won\'t Do")'
+    );
+    const data = await client._get(
+      `/rest/agile/1.0/board/${sbId}/issue?maxResults=100&jql=${notDone}&fields=summary,status,labels,priority,issuetype`
+    );
+    const issues = data.issues || [];
+    console.log(`[popup] Support board ${sbId}: ${issues.length} open issues`);
+    return issues.map(i => normalizeStory(i, spf));
   } catch (err) {
     console.warn('[popup] Support board fetch failed:', err.message);
     return [];
@@ -247,10 +254,17 @@ function renderContextBar(sprint, projectKey) {
   document.getElementById('refresh-countdown').style.display = 'inline';
 }
 
-function renderInsightsSprint(lightData, insightsData, settings) {
+// ── Shared date-range helper ───────────────────────────────────────────────
+function formatDateRange(startDate, endDate) {
+  const fmt = d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  return `${fmt(startDate)} – ${fmt(endDate)}`;
+}
+
+// ── Squad Insights (team charts) ──────────────────────────────────────────
+function renderSquadInsights(lightData, insightsData, settings) {
   const { sprint, stories } = lightData;
   const workingDays = settings.sprint?.workingDays || [0,1,2,3,4];
-  const { totalDays, daysElapsed } = sprintDayMetrics(sprint, workingDays);
+  const { totalDays } = sprintDayMetrics(sprint, workingDays);
 
   // Sprint progress bar (all stories, all assignees)
   inject('sprint-progress-container', renderSprintProgressBar(stories));
@@ -258,34 +272,35 @@ function renderInsightsSprint(lightData, insightsData, settings) {
   // Burndown (needs heavy data with changelog)
   if (insightsData?.storiesHeavy) {
     const totalPoints = insightsData.storiesHeavy.reduce((s,t) => s + (t.points||0), 0);
-    const bd = computeBurndownSeries(
-      { ...sprint, totalDays, totalPoints },
-      insightsData.storiesHeavy
-    );
-    const dr = `${new Date(sprint.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${new Date(sprint.endDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
-    inject('burndown-container', renderBurndownCard(bd, dr));
+    const bd = computeBurndownSeries({ ...sprint, totalDays, totalPoints }, insightsData.storiesHeavy);
+    inject('burndown-container', renderBurndownCard(bd, formatDateRange(sprint.startDate, sprint.endDate)));
   } else {
-    inject('burndown-container', renderBurndownCard(null));
-  }
-
-  // Support board
-  // (rendered after its own fetch, or empty if not configured — see renderSupportBoard)
-
-  // Time Logged (sprint mode — daily grain)
-  if (insightsData?.worklogs) {
-    const days = computeDailyTimesheet(
-      insightsData.worklogs,
-      sprint.startDate, sprint.endDate,
-      workingDays
+    inject('burndown-container',
+      '<div style="padding:10px 12px;background:var(--surface);border:1px solid var(--border,rgba(255,255,255,.05));border-radius:8px;font-size:12px;color:var(--text-muted);">Loading burndown…</div>'
     );
-    const dr2 = `${new Date(sprint.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${new Date(sprint.endDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
-    inject('time-logged-container', renderDailyTimesheetChart(days, dr2));
   }
+  // Support board renders separately via renderSupportBoard() after its own fetch
+}
 
-  // Estimate vs Actual
-  if (insightsData?.estVsActual) {
-    const dr3 = `${new Date(sprint.startDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${new Date(sprint.endDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
-    inject('est-vs-actual-container', renderEstVsActualCard(insightsData.estVsActual, dr3));
+// ── Individual Insights (personal charts) ─────────────────────────────────
+function renderIndividualInsights(insightsData, settings, sprint) {
+  if (!insightsData) {
+    inject('time-logged-container',
+      '<div style="padding:10px 12px;background:var(--surface);border:1px solid var(--border,rgba(255,255,255,.05));border-radius:8px;font-size:12px;color:var(--text-muted);">Loading…</div>'
+    );
+    inject('est-vs-actual-container', '');
+    return;
+  }
+  const workingDays = settings.sprint?.workingDays || [0,1,2,3,4];
+  const dr = formatDateRange(sprint.startDate, sprint.endDate);
+
+  const days = computeDailyTimesheet(insightsData.worklogs, sprint.startDate, sprint.endDate, workingDays);
+  inject('time-logged-container', renderDailyTimesheetChart(days, dr));
+
+  if (insightsData.estVsActual) {
+    inject('est-vs-actual-container', renderEstVsActualCard(insightsData.estVsActual, dr));
+  } else {
+    inject('est-vs-actual-container', '');
   }
 }
 
@@ -364,15 +379,15 @@ async function applyTimeFilter(filter) {
 // ── Collapsibles ───────────────────────────────────────────────────────────
 function wireCollapsibles() {
   [
-    { headerId:'insights-section-header', bodyId:'insights-body',   chevronId:'insights-section-chevron', initOpen:true  },
-    { headerId:'my-tickets-header',       bodyId:'my-tickets-body', chevronId:'my-tickets-chevron',       initOpen:false },
+    { headerId:'squad-insights-header',       bodyId:'squad-insights-body',       chevronId:'squad-insights-chevron',       initOpen:true  },
+    { headerId:'individual-insights-header',  bodyId:'individual-insights-body',  chevronId:'individual-insights-chevron',  initOpen:true  },
+    { headerId:'my-tickets-header',           bodyId:'my-tickets-body',           chevronId:'my-tickets-chevron',           initOpen:false },
   ].forEach(({ headerId, bodyId, chevronId, initOpen }) => {
     const hdr     = document.getElementById(headerId);
     const body    = document.getElementById(bodyId);
     const chevron = document.getElementById(chevronId);
     if (!hdr || !body || hdr.dataset.wired) return;
     hdr.dataset.wired = '1';
-    // Set initial state
     body.style.display = initOpen ? '' : 'none';
     if (chevron) chevron.innerHTML = initOpen ? '&#9660;' : '&#9654;';
     hdr.addEventListener('click', () => {
@@ -405,7 +420,7 @@ function showErrorBanner(msg) {
 // ── Refresh ────────────────────────────────────────────────────────────────
 async function refreshDashboard() {
   if (!_settings) return;
-  setLoading('insights-loading-pill', true);
+  setLoading('squad-loading-pill', true);
   _quarterCache = {}; // invalidate quarter cache on manual refresh
   try {
     // Parallel: light + insights + support + sentry
@@ -421,7 +436,8 @@ async function refreshDashboard() {
 
     // Render with light data first
     renderContextBar(lightData.sprint, deriveProjectKey(lightData.sprint.name, lightData.stories));
-    renderInsightsSprint(lightData, null, _settings);
+    renderSquadInsights(lightData, null, _settings);
+    renderIndividualInsights(null, _settings, lightData.sprint);
     renderSupportBoard(supportStories);
     renderMyTicketsSection(lightData.stories, _settings);
     showScreen('screen-home');
@@ -432,7 +448,8 @@ async function refreshDashboard() {
     const insightsData = await fetchInsightsData(_settings, lightData.sprint, lightData.storyPointsField);
     _insightsData = insightsData;
     await writeCache(INSIGHTS_CACHE, { sprint: lightData.sprint, storiesHeavy: insightsData.storiesHeavy, worklogs: insightsData.worklogs, estVsActual: insightsData.estVsActual });
-    renderInsightsSprint(lightData, insightsData, _settings);
+    renderSquadInsights(lightData, insightsData, _settings);
+    renderIndividualInsights(insightsData, _settings, lightData.sprint);
 
     startRefreshTimer(Date.now());
     document.getElementById('error-banner')?.remove();
@@ -440,7 +457,8 @@ async function refreshDashboard() {
     console.error('[popup] Refresh failed:', err.message);
     showErrorBanner(err.message);
   } finally {
-    setLoading('insights-loading-pill', false);
+    setLoading('squad-loading-pill', false);
+    setLoading('individual-loading-pill', false);
   }
 }
 
@@ -474,18 +492,16 @@ async function boot() {
   const insightsCache = await readCache(INSIGHTS_CACHE);
   if (lightCache?.sprint && lightCache?.stories) {
     renderContextBar(lightCache.sprint, deriveProjectKey(lightCache.sprint.name, lightCache.stories));
-    renderInsightsSprint(lightCache, insightsCache, settings);
-    if (!insightsCache) {
-      inject('burndown-container','<div style="font-size:12px;color:var(--text-muted);padding:8px;">Loading burndown…</div>');
-      inject('time-logged-container','<div style="font-size:12px;color:var(--text-muted);padding:8px;">Loading…</div>');
-    }
+    renderSquadInsights(lightCache, insightsCache, settings);
+    renderIndividualInsights(insightsCache, settings, lightCache.sprint);
     renderMyTicketsSection(lightCache.stories, settings);
     showScreen('screen-home');
     wireCollapsibles();
     wireTimeFilterButtons();
     startRefreshTimer(lightCache.fetchedAt);
   } else {
-    setLoading('insights-loading-pill', true);
+    setLoading('squad-loading-pill', true);
+    setLoading('individual-loading-pill', true);
   }
 
   // Parallel fetches
@@ -499,7 +515,8 @@ async function boot() {
     await writeCache(LIGHT_CACHE, { sprint: lightData.sprint, stories: lightData.stories, storyPointsField: lightData.storyPointsField });
 
     renderContextBar(lightData.sprint, deriveProjectKey(lightData.sprint.name, lightData.stories));
-    renderInsightsSprint(lightData, insightsCache, settings);
+    renderSquadInsights(lightData, insightsCache, settings);
+    renderIndividualInsights(insightsCache, settings, lightData.sprint);
     renderSupportBoard(supportStories);
     renderMyTicketsSection(lightData.stories, settings);
     showScreen('screen-home');
@@ -510,7 +527,8 @@ async function boot() {
     const insightsData = await fetchInsightsData(settings, lightData.sprint, lightData.storyPointsField);
     _insightsData = insightsData;
     await writeCache(INSIGHTS_CACHE, { sprint: lightData.sprint, storiesHeavy: insightsData.storiesHeavy, worklogs: insightsData.worklogs, estVsActual: insightsData.estVsActual });
-    renderInsightsSprint(lightData, insightsData, settings);
+    renderSquadInsights(lightData, insightsData, settings);
+    renderIndividualInsights(insightsData, settings, lightData.sprint);
 
     startRefreshTimer(Date.now());
   } catch (err) {
@@ -522,7 +540,8 @@ async function boot() {
       showErrorBanner(err.message);
     }
   } finally {
-    setLoading('insights-loading-pill', false);
+    setLoading('squad-loading-pill', false);
+    setLoading('individual-loading-pill', false);
   }
 }
 

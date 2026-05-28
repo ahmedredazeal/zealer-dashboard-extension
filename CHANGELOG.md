@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.2 (2026-05-26) — Support board fix + section split
+
+**Fixed:**
+- Support board now uses `/rest/agile/1.0/board/{id}/issue` (Agile board issues API)
+  instead of trying to get an active sprint. Previous approach silently returned
+  empty for Kanban boards (no sprint). New approach works for Scrum and Kanban alike.
+
+**Changed:**
+- "INSIGHTS" section renamed to **"SQUAD INSIGHTS"** (Sprint Progress, Burndown,
+  Support Board Breakdown, Sentry Trend).
+- New **"INDIVIDUAL INSIGHTS"** section added (Time Logged, Estimate vs Actual,
+  sprint/quarter filter). Both sections expanded by default.
+
+---
+
 ## v0.2.1 (2026-05-26) — Bug fixes
 
 **Fixed:**
