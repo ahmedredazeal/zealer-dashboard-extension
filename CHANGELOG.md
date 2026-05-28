@@ -1,5 +1,59 @@
 # Changelog
 
+## v0.2.0 (2026-05-26) — Phase 3: Insights
+
+**Added:**
+- **INSIGHTS section** — primary section, expanded by default, sits above My Tickets.
+  Contains all team analytics charts plus engineer-scoped time charts.
+- **Sprint Progress bar** (full sprint, all assignees) — ported AS-IS from EM Dashboard.
+  Falls back to ticket count when no story points exist.
+- **Burndown chart** — carries `computeBurndownSeries` + `attachCloseTimestamps` (AS-IS
+  from EM). Heavy fetch adds `expand=changelog` to provide close-timestamps.
+  Shows Ideal / By due date / Actual series with `hasActualData` guard.
+- **Support Board Breakdown** — optional; only shown if `sprint.supportBoardId` is set in
+  Settings. New optional field added to the Sprint configuration section.
+  Ported AS-IS from EM: status bars + blocked-external badge + summary line.
+- **TIME LOGGED chart** — engineer's own worklogs only.
+  - **Sprint mode** (default): one bar per working day (`computeDailyTimesheet`). Supports
+    9 bars (Sun–Thu × sprint length). Shows daily hours + total in header.
+  - **Quarter mode** (Q1/Q2/Q3/Q4 toggle): one bar per sprint in the quarter
+    (`computeQuarterTimesheet`). Lazily fetched on first toggle; cached per quarter
+    for the session. Uses `worklogDate` JQL + `customfield_10020` (Sprint field) to
+    group issues by sprint.
+- **ESTIMATE VS ACTUAL** — single bar for the engineer. Shows logged / estimated ratio
+  (×N format matching EM's pattern). Hidden in quarter mode (no estimate data for
+  historical sprints).
+- **SENTRY TREND** — full-width sparkline, carries `src/sentry-trend.js` AS-IS.
+  Both EM fixes applied: (1) no view tracked → setup prompt, not silent hide
+  (v1.6.0 fix); (2) single data point → "First reading" dot, not a blank chart
+  (v1.5.9 fix). `recordTrendSample` fires on each panel open.
+- **Time filter toggle** — Sprint / Q1 / Q2 / Q3 / Q4 buttons in the Insights section.
+  Sprint mode shows daily-grain charts; quarter mode shows sprint-grain.
+- **My Tickets** — collapsed by default (Insights is now the primary section).
+  Unchanged data fetching from Phase 2.
+- `src/engineer-timesheet.js` — new pure module: `extractEngineerWorklogs`,
+  `computeDailyTimesheet`, `computeEngineerEstVsActual`, `computeQuarterTimesheet`,
+  `quarterDateRange`. 22 unit tests.
+- `src/engineer-charts.js` — new pure chart-rendering module: `renderSprintProgressBar`,
+  `renderBurndownCard`, `renderSupportBoardChart`, `renderDailyTimesheetChart`,
+  `renderSprintTimesheetChart`, `renderEstVsActualCard`, `renderSentryTrendCard`.
+  All functions return HTML strings (DOM-free). 38 unit tests.
+- Settings: optional **Support Board ID** field added to Sprint configuration section.
+
+**Changed:**
+- `popup.html` — Insights section with sprint-progress, chart rows, time filter,
+  and sentry trend. My Tickets starts collapsed. Old "Current Sprint" ticket-list
+  section removed (tickets live in My Tickets).
+- `popup.js` — Option B parallel fetches: light (My Tickets + progress) fires first;
+  heavy (changelog + worklog) fires in parallel; support board fires in parallel.
+  Quarter data fetched lazily on first toggle.
+- `manifest.json` — version bumped to 0.2.0.
+- `BACKLOG.md` — Phase 3 items marked done.
+
+**Tests:** 262 total (202 carried + 22 engineer-timesheet + 38 engineer-charts), all passing.
+
+---
+
 ## v0.1.1 (2026-05-26) — Copy + backlog
 
 **Changed:**

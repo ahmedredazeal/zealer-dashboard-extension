@@ -18,21 +18,21 @@ above My Tickets. Uses parallel data fetching (Option B) so My Tickets renders
 instantly from the light sprint fetch while Insights fires a second heavier
 fetch (changelog + worklogs) in parallel.
 
-- [ ] **SPRINT PROGRESS bar** — big bar at top of Insights, showing % done /
+- [x] **SPRINT PROGRESS bar** — big bar at top of Insights, showing % done /
       in-progress / not-started across all sprint stories (same as EM screenshot).
-- [ ] **BURNDOWN chart** — carry `renderBurndownChart` from EM's `src/chart-svg.js`
+- [x] **BURNDOWN chart** — carry `renderBurndownChart` from EM's `src/chart-svg.js`
       AS-IS. Needs re-fetch with `expand=changelog` for the insights pass.
-- [ ] **TIME LOGGED** — engineer's own worklogs, daily-grain variant (brief §6).
+- [x] **TIME LOGGED** — engineer's own worklogs, daily-grain variant (brief §6).
       Single-bar per working day. Requires worklog field in insights fetch.
-- [ ] **ESTIMATE VS ACTUAL** — single bar for the engineer (their estimate vs their
+- [x] **ESTIMATE VS ACTUAL** — single bar for the engineer (their estimate vs their
       logged time). Reuse EM's `renderTimesheetChart` adapted for 1 person.
-- [ ] **SUPPORT BOARD BREAKDOWN** — show only if engineer has tickets on a support
+- [x] **SUPPORT BOARD BREAKDOWN** — show only if engineer has tickets on a support
       board. Carry EM's `buildSupportBoardChart` logic.
-- [ ] **SENTRY TREND** — carry `src/sentry-trend.js` AS-IS + apply both EM fixes:
+- [x] **SENTRY TREND** — carry `src/sentry-trend.js` AS-IS + apply both EM fixes:
       (1) show setup prompt when no view tracked (v1.6.0 fix, not silent hide);
       (2) show from day 1 with single dot + "Open daily to build trend" prompt
       (v1.5.9 fix, not requiring 2 data points).
-- [ ] **Panel section order**: Insights → My Tickets → Gantt (collapsed) → My Day → My Goals.
+- [x] **Panel section order**: Insights → My Tickets → Gantt (collapsed) → My Day → My Goals.
 - [ ] Update `docs/ARCHITECTURE.md`, `CHANGELOG.md`, `changelog.html`, `README.md`.
 
 ---

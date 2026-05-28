@@ -10,22 +10,38 @@
   <link rel="stylesheet" href="styles.css"/>
   <style>
     .section-loading-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 10px; color: var(--primary, #6366f1);
-      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+      display:inline-flex;align-items:center;gap:4px;
+      font-size:10px;color:var(--primary,#6366f1);
+      opacity:0;pointer-events:none;transition:opacity .2s;
     }
-    .section-loading-pill.visible { opacity: 1; }
+    .section-loading-pill.visible { opacity:1; }
     .section-loading-pill::before {
-      content: ''; display: inline-block; width: 6px; height: 6px;
-      border-radius: 50%; background: var(--primary, #6366f1);
-      animation: section-pulse 1s ease-in-out infinite;
+      content:'';display:inline-block;width:6px;height:6px;
+      border-radius:50%;background:var(--primary,#6366f1);
+      animation:section-pulse 1s ease-in-out infinite;
     }
     @keyframes section-pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.7); }
+      0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)}
     }
-    .ticket-row:last-child { border-bottom: none !important; }
-    .ticket-row:hover { background: var(--surface-raised, rgba(255,255,255,0.03)); border-radius: 4px; }
+    .ticket-row:last-child { border-bottom:none !important; }
+    .ticket-row:hover { background:var(--surface-raised,rgba(255,255,255,.03));border-radius:4px; }
+    .chart-row {
+      display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;
+    }
+    @media (max-width: 340px) { .chart-row { grid-template-columns:1fr; } }
+    .timefilter-bar {
+      display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;
+    }
+    .timefilter-btn {
+      font-size:11px;padding:3px 10px;border-radius:12px;cursor:pointer;
+      border:1px solid var(--border,rgba(255,255,255,.08));
+      background:transparent;color:var(--text-muted);
+      transition:background .15s,color .15s;
+    }
+    .timefilter-btn.active {
+      background:var(--primary,#6366f1);color:#fff;border-color:var(--primary,#6366f1);
+    }
+    .timefilter-btn:hover:not(.active) { background:var(--surface-raised); }
   </style>
 </head>
 <body>
@@ -40,14 +56,14 @@
         <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#60a5fa"/>
       </svg>
       <span class="app-bar-title">Zealer Dashboard</span>
-      <span class="app-bar-version" id="app-version">v0.1.0</span>
+      <span class="app-bar-version" id="app-version">v0.2.0</span>
     </div>
     <div class="app-bar-right">
       <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
     </div>
   </div>
 
-  <!-- Context bar (sticky, hidden until data loads) -->
+  <!-- Context bar (sticky) -->
   <div class="context-bar empty" id="context-bar">
     <span class="context-key" id="context-key" style="display:none;"></span>
     <span class="context-separator" id="context-sep-1" style="display:none;">·</span>
@@ -56,7 +72,7 @@
     <span id="refresh-countdown"
           title="Next auto-refresh"
           style="display:none;font-size:11px;color:var(--text-muted);
-                 font-variant-numeric:tabular-nums;letter-spacing:0.2px;margin-right:4px;"></span>
+                 font-variant-numeric:tabular-nums;letter-spacing:.2px;margin-right:4px;"></span>
     <button class="icon-btn" id="context-refresh" title="Refresh now" style="display:none;">↻</button>
   </div>
 
@@ -85,31 +101,54 @@
     <div class="screen hidden" id="screen-home">
       <div class="screen-body">
 
-        <!-- CURRENT SPRINT — expanded by default -->
-        <div class="section" id="current-sprint-section">
-          <div id="sprint-section-header"
+        <!-- ── INSIGHTS ─────────────────────────────────────────────── -->
+        <div class="section" id="insights-section">
+          <div id="insights-section-header"
                class="section-label"
                style="display:flex;align-items:center;justify-content:space-between;
                       cursor:pointer;user-select:none;">
-            <span id="current-sprint-title">Current Sprint</span>
+            <span>INSIGHTS</span>
             <div style="display:flex;align-items:center;gap:6px;">
-              <span class="section-loading-pill" id="sprint-loading-pill">Refreshing</span>
-              <span id="current-sprint-total"
-                    style="font-size:11px;font-weight:600;color:var(--text-muted);"></span>
-              <span id="sprint-section-chevron"
-                    style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+              <span class="section-loading-pill" id="insights-loading-pill">Refreshing</span>
+              <span id="insights-section-chevron" style="color:var(--text-muted);font-size:12px;">&#9660;</span>
             </div>
           </div>
 
-          <div id="sprint-glance-body" style="margin-top:8px;">
-            <!-- Sprint mini progress bar -->
-            <div id="sprint-glance-ticket-counts" style="margin-bottom:10px;"></div>
-            <!-- Ticket list -->
-            <div id="sprint-story-list"></div>
+          <div id="insights-body" style="margin-top:8px;">
+            <!-- Sprint progress bar (full width) -->
+            <div id="sprint-progress-container"></div>
+
+            <!-- Row 1: Burndown | Support board -->
+            <div class="chart-row">
+              <div id="burndown-container"></div>
+              <div id="support-board-container"></div>
+            </div>
+
+            <!-- Time filter toggle -->
+            <div class="timefilter-bar" id="time-filter-buttons" style="margin-top:4px;">
+              <button class="timefilter-btn active" data-filter="sprint">Sprint</button>
+              <button class="timefilter-btn" data-filter="Q1">Q1</button>
+              <button class="timefilter-btn" data-filter="Q2">Q2</button>
+              <button class="timefilter-btn" data-filter="Q3">Q3</button>
+              <button class="timefilter-btn" data-filter="Q4">Q4</button>
+            </div>
+
+            <!-- Row 2: Time logged | Estimate vs Actual -->
+            <!-- In quarter mode: time logged goes full-width, est vs actual is hidden -->
+            <div id="time-row-sprint" class="chart-row">
+              <div id="time-logged-container"></div>
+              <div id="est-vs-actual-container"></div>
+            </div>
+            <div id="time-row-quarter" style="display:none;">
+              <div id="quarter-time-logged-container"></div>
+            </div>
+
+            <!-- Sentry trend (full width) -->
+            <div id="sentry-trend-container" style="margin-top:4px;"></div>
           </div>
         </div>
 
-        <!-- MY TICKETS — filtered to assignee = me -->
+        <!-- ── MY TICKETS ────────────────────────────────────────────── -->
         <div class="section" id="my-tickets-section">
           <div id="my-tickets-header"
                class="section-label"
@@ -119,30 +158,45 @@
             <div style="display:flex;align-items:center;gap:6px;">
               <span id="my-tickets-total"
                     style="font-size:11px;font-weight:600;color:var(--text-muted);"></span>
-              <span id="my-tickets-chevron"
-                    style="color:var(--text-muted);font-size:12px;">&#9660;</span>
+              <span id="my-tickets-chevron" style="color:var(--text-muted);font-size:12px;">&#9654;</span>
             </div>
           </div>
-          <div id="my-tickets-body" style="margin-top:4px;">
+          <div id="my-tickets-body" style="margin-top:4px;display:none;">
             <div id="my-tickets-list"></div>
           </div>
         </div>
 
-        <!-- MY DAY placeholder (Phase 4) -->
+        <!-- ── GANTT placeholder (Phase 3b) ─────────────────────────── -->
         <div class="section">
-          <div class="section-label">My Day <span style="font-size:9px;color:var(--primary);
-               background:var(--surface-raised);padding:1px 6px;border-radius:10px;
-               margin-left:4px;font-weight:500;">🔮 Phase 4</span></div>
+          <div class="section-label">
+            Gantt
+            <span style="font-size:9px;color:var(--primary);background:var(--surface-raised);
+                         padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:500;">🔮 Phase 3b</span>
+          </div>
+          <div class="card">
+            <div class="card-subtitle">Sprint timeline view with per-ticket due-date bars.</div>
+          </div>
+        </div>
+
+        <!-- ── MY DAY placeholder (Phase 4) ─────────────────────────── -->
+        <div class="section">
+          <div class="section-label">
+            My Day
+            <span style="font-size:9px;color:var(--primary);background:var(--surface-raised);
+                         padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:500;">🔮 Phase 4</span>
+          </div>
           <div class="card">
             <div class="card-subtitle">Today's calendar &amp; absence will appear here.</div>
           </div>
         </div>
 
-        <!-- MY GOALS placeholder (Phase 5) -->
+        <!-- ── MY GOALS placeholder (Phase 5) ───────────────────────── -->
         <div class="section">
-          <div class="section-label">My Goals <span style="font-size:9px;color:var(--primary);
-               background:var(--surface-raised);padding:1px 6px;border-radius:10px;
-               margin-left:4px;font-weight:500;">🔮 Phase 5</span></div>
+          <div class="section-label">
+            My Goals
+            <span style="font-size:9px;color:var(--primary);background:var(--surface-raised);
+                         padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:500;">🔮 Phase 5</span>
+          </div>
           <div class="card">
             <div class="card-subtitle">Leapsome OKRs and dev-plan items.</div>
           </div>

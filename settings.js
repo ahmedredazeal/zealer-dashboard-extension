@@ -105,6 +105,7 @@ function setCheckedWorkingDays(days) {
   // Populate form ─ Sprint config
   if (settings.sprint) {
     document.getElementById('sprint-board-id').value = settings.sprint.boardId ?? '';
+    document.getElementById('sprint-support-board-id').value = settings.sprint.supportBoardId ?? '';
     setCheckedWorkingDays(settings.sprint.workingDays);
   } else {
     setCheckedWorkingDays(DEFAULT_WORKING_DAYS);
@@ -235,6 +236,8 @@ function setCheckedWorkingDays(days) {
 
       const boardIdRaw = document.getElementById('sprint-board-id').value.trim();
       const boardId = boardIdRaw ? parseInt(boardIdRaw, 10) : null;
+      const spBoardIdRaw = document.getElementById('sprint-support-board-id').value.trim();
+      const supportBoardId = spBoardIdRaw ? parseInt(spBoardIdRaw, 10) : null;
 
       const newSettings = {
         jira: {
@@ -254,8 +257,9 @@ function setCheckedWorkingDays(days) {
           token:       document.getElementById('sentry-token').value.trim(),
         },
         sprint: {
-          boardId: Number.isFinite(boardId) ? boardId : null,
-          workingDays: getCheckedWorkingDays(),
+          boardId:       Number.isFinite(boardId) ? boardId : null,
+          supportBoardId: Number.isFinite(supportBoardId) ? supportBoardId : null,
+          workingDays:   getCheckedWorkingDays(),
         },
         // Reserved schemas for future phases — disabled in UI today
         leapsome: { token: existing.leapsome?.token || null },
