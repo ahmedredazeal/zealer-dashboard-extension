@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver">v0.2.1 <span class="cl-date">2026-05-26</span></div>
+      <div class="cl-desc">
+        <strong>Bug fixes:</strong> (1) <code>attachCloseTimestamps</code> crash — "cannot read properties of undefined (reading 'map')" on first settings save; function takes 3 args and returns new array, was called with 1. (2) <code>_search</code> expand param must be inside body, not 2nd positional arg — burndown changelog data now fetched correctly. (3) <code>SentryClient</code> and <code>recordTrendSample</code> wrong signatures fixed — Sentry trend now records correctly.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver major">v0.2.0 <span class="cl-date">2026-05-26</span></div>
       <div class="cl-desc">
         <strong>Phase 3 — Insights:</strong> full analytics section above My Tickets. Sprint Progress bar (team-wide), Burndown chart (with changelog), Support Board Breakdown (optional, configurable board ID), Time Logged (engineer-only, daily-grain sprint / sprint-grain quarter), Estimate vs Actual (engineer-only, ratio bar), Sentry Trend (both EM v1.5.9 + v1.6.0 fixes). Time filter toggle: Sprint / Q1–Q4. Two new modules: <code>src/engineer-timesheet.js</code> (22 tests) + <code>src/engineer-charts.js</code> (38 tests). 262 total tests.

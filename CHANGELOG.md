@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.1 (2026-05-26) — Bug fixes
+
+**Fixed:**
+- `attachCloseTimestamps(rawIssues, stories, sprintStartDate)` was called with a single
+  argument — `stories` was `undefined` causing "cannot read properties of undefined
+  (reading 'map')" crash immediately after saving settings. Now passes all three args
+  and captures the returned array (the function is not mutating).
+- `_search` expand parameter was passed as a second positional argument (ignored by
+  the method). `expand` now goes inside the body object as `body.expand`, enabling
+  changelog data for the Burndown chart.
+- `SentryClient` was constructed with wrong arg order (`(baseUrl, token)` instead of
+  `(baseUrl, orgSlug, projectSlug, token)`). `recordTrendSample` was called with the
+  Sentry client object instead of `(viewId, count)`. Both corrected: issue count is
+  now fetched via `getIssuesFromView` and passed as `count` to `recordTrendSample`.
+
+---
+
 ## v0.2.0 (2026-05-26) — Phase 3: Insights
 
 **Added:**

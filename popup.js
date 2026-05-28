@@ -134,16 +134,17 @@ async function fetchLightData(settings) {
 async function fetchInsightsData(settings, sprint, spf) {
   const { baseUrl, email, token } = settings.jira;
   const client = new JiraClient(baseUrl, email, token);
-  const workingDays = settings.sprint?.workingDays || [0,1,2,3,4];
 
   const jql = `sprint = ${sprint.id} AND issuetype not in subTaskIssueTypes()`;
   const fields = ['summary','status','assignee','priority',spf,'customfield_10016','customfield_10026','duedate','labels','worklog','timeoriginalestimate'];
-  const result = await client._search({ jql, fields, maxResults: 100 }, 'changelog');
+
+  // Bug fix: expand must be inside body, not a second positional arg
+  const result = await client._search({ jql, fields, maxResults: 100, expand: 'changelog' });
   const rawIssues = result.issues || [];
 
-  // Normalize + attach changelog close-timestamps (for burndown)
-  const storiesHeavy = rawIssues.map(i => normalizeStory(i, spf));
-  attachCloseTimestamps(storiesHeavy);
+  // Bug fix: attachCloseTimestamps(rawIssues, stories, sprintStartDate) — returns new array
+  const normalized    = rawIssues.map(i => normalizeStory(i, spf));
+  const storiesHeavy  = attachCloseTimestamps(rawIssues, normalized, sprint.startDate);
 
   // Extract engineer worklogs
   const accountId = settings.jira.accountId;
@@ -197,17 +198,28 @@ async function fetchQuarterData(settings, quarter) {
 async function loadSentryTrend(settings) {
   const sentry  = settings.sentry;
   const viewId  = sentry?.viewId;
-  const viewLabel = sentry?.viewUrl ? `View ${viewId || ''}` : '';
+  // Use org slug for the label; fall back to viewId
+  const viewLabel = sentry?.org ? `${sentry.org} · View ${viewId || ''}` : (viewId ? `View ${viewId}` : '');
 
   if (!viewId || !sentry?.token) {
     inject('sentry-trend-container', renderSentryTrendCard('', []));
     return;
   }
 
-  // Record today's sample (fire and forget, but catch errors)
+  // Record today's sample: fetch live count → recordTrendSample(viewId, count)
+  // Bug fix: SentryClient(baseUrl, orgSlug, projectSlug, token) — 4 args
+  // Bug fix: recordTrendSample(viewId, count) — not (client, org, viewId, projectIds)
   try {
-    const sc = new SentryClient(sentry.baseUrl || 'https://sentry.io', sentry.token);
-    await recordTrendSample(sc, sentry.org, viewId, sentry.projectIds || []);
+    const sc    = new SentryClient(
+      sentry.baseUrl || 'https://sentry.io',
+      sentry.org || '',
+      null,
+      sentry.token
+    );
+    const env    = sentry.environment || undefined; // undefined → API default ('production')
+    const issues = await sc.getIssuesFromView(viewId, sentry.projectIds || [], env);
+    const count  = Array.isArray(issues) ? issues.length : 0;
+    await recordTrendSample(viewId, count);
   } catch (e) {
     console.warn('[popup] Sentry sample failed:', e.message);
   }
