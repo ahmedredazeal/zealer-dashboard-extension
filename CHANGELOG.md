@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.3 (2026-05-26) — Support board JQL fix
+
+**Fixed:**
+- `fetchSupportData` was building a hardcoded `status not in (Done,"QA Accepted",...,"Won't Fix","Won't Do")`
+  JQL — Jira 400'd because `"Won't Fix"` / `"Won't Do"` are resolution values, not statuses.
+  Now delegates to `client.getKanbanBoardIssues(sbId, spf, { excludeClosed: true })` — the
+  same method EM uses for extra boards. It reads the board's own filter JQL via
+  `/rest/agile/1.0/board/{id}` → `/rest/api/3/filter/{filterId}`, then appends only
+  `status != "Closed"` to exclude terminal tickets. No hardcoded status names.
+
+---
+
 ## v0.2.2 (2026-05-26) — Support board fix + section split
 
 **Fixed:**

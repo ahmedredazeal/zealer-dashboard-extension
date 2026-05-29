@@ -158,7 +158,10 @@ async function fetchInsightsData(settings, sprint, spf) {
   return { storiesHeavy, worklogs, estVsActual, rawIssues };
 }
 
-/** Support board fetch — uses board issues API, works for Kanban and Scrum. */
+/** Support board fetch — mirrors EM's getKanbanBoardIssues pattern exactly.
+ *  Fetches the board's own filter JQL via the board config API, then appends
+ *  `status != "Closed"` to exclude only truly terminal tickets.
+ *  Works for Kanban and Scrum boards; no hardcoded status names. */
 async function fetchSupportData(settings) {
   const sbId = settings.sprint?.supportBoardId;
   if (!sbId) return [];
@@ -168,17 +171,11 @@ async function fetchSupportData(settings) {
   const spf    = settings._cachedSpf?.[settings.sprint.boardId] || 'customfield_10016';
 
   try {
-    // Use the Agile board issues endpoint — no sprint required (Kanban-safe).
-    // JQL filters out terminal statuses; everything else is "open".
-    const notDone = encodeURIComponent(
-      'status not in (Done,"QA Accepted",Closed,Resolved,"Won\'t Fix","Won\'t Do")'
-    );
-    const data = await client._get(
-      `/rest/agile/1.0/board/${sbId}/issue?maxResults=100&jql=${notDone}&fields=summary,status,labels,priority,issuetype`
-    );
-    const issues = data.issues || [];
-    console.log(`[popup] Support board ${sbId}: ${issues.length} open issues`);
-    return issues.map(i => normalizeStory(i, spf));
+    // getKanbanBoardIssues: reads board.filter.id → filter JQL → appends status != "Closed"
+    // This is exactly what EM does for extra/support boards.
+    const rawIssues = await client.getKanbanBoardIssues(sbId, spf, { excludeClosed: true });
+    console.log(`[popup] Support board ${sbId}: ${rawIssues.length} open issues`);
+    return rawIssues.map(i => normalizeStory(i, spf));
   } catch (err) {
     console.warn('[popup] Support board fetch failed:', err.message);
     return [];

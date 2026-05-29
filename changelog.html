@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver">v0.2.3 <span class="cl-date">2026-05-26</span></div>
+      <div class="cl-desc">
+        <strong>Support board JQL fix:</strong> replaced hardcoded <code>status not in (...,"Won't Fix",...)</code> with <code>getKanbanBoardIssues()</code> — reads the board's own filter JQL then appends only <code>status != "Closed"</code>. Jira no longer 400s on invalid resolution-as-status values.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver">v0.2.2 <span class="cl-date">2026-05-26</span></div>
       <div class="cl-desc">
         <strong>Support board fix + section split:</strong> support board now uses the Agile board issues API (works for Kanban, not just Scrum). "INSIGHTS" split into "SQUAD INSIGHTS" (Sprint Progress, Burndown, Support Board, Sentry Trend) and "INDIVIDUAL INSIGHTS" (Time Logged, Estimate vs Actual, sprint/quarter filter).
