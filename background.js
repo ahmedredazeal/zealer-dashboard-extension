@@ -41,7 +41,14 @@ async function fetchAndRecordSentryTrend(settings) {
   }
 
   const { viewId, projectIds, environment } = parsed;
-  const env = environment || 'production'; // mirror EM: default to production
+  const env = environment || 'production';
+  // v1.7.0 port: pass query/sort/statsPeriod from the URL so count matches Sentry UI.
+  // When statsPeriod is absent, Sentry returns all-time issues (no 7-day truncation).
+  const viewParams = {
+    query:       parsed.query       || null,
+    sort:        parsed.sort        || null,
+    statsPeriod: parsed.statsPeriod || null,
+  };
 
   try {
     const client = new SentryClient(
@@ -50,7 +57,7 @@ async function fetchAndRecordSentryTrend(settings) {
       '',
       sentry.token
     );
-    const issues = await client.getIssuesFromView(viewId, projectIds, env);
+    const issues = await client.getIssuesFromView(viewId, projectIds, env, viewParams);
     const count  = Array.isArray(issues) ? issues.length : 0;
     await recordTrendSample(viewId, count);
     console.log(`[background] Sentry trend recorded: view ${viewId} → ${count} issues`);

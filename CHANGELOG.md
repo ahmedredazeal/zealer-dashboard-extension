@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.2.6 (2026-05-30) — Port EM v1.7.0 + v1.7.1 Sentry fixes
+
+**Fixed (ported from EM Dashboard):**
+- **v1.7.0 — Sentry issue count:** `getIssuesFromView` was hardcoding `statsPeriod:'7d'`, excluding older unresolved issues and producing counts lower than Sentry's UI. Now passes `query`, `sort`, `statsPeriod` from `parseSentryUrl` through to the API. When `statsPeriod` is absent from the URL, it is omitted entirely so Sentry returns all-time issues.
+- **v1.7.1 — Trend chart floor:** when all counts were equal (e.g. "stable at 13"), every point landed at the chart floor leaving the upper area empty. Fixed with ≥15% y-axis padding above and below the data range.
+- **v1.7.1 — X-axis label overflow:** labels were at `y = H−2`, touching the SVG edge and colliding with the HTML footer. Raised to `y = H−4`; `PAD_B` increased 16→20.
+- **v1.7.1 — Middle label crowding:** middle x-label is now skipped when it has less than 40px clearance on either side (small datasets).
+- **v1.7.1 — "min N max N" footer:** when count is constant, footer now shows "stable at N" instead of the confusing "min 13 max 13".
+
+---
+
 ## v0.2.5 (2026-05-30) — Sentry trend architecture fix
 
 **Changed (architectural):**

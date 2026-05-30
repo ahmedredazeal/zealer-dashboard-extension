@@ -483,13 +483,20 @@ export function renderSentryTrendCard(label, samples) {
   const deltaStr   = delta > 0 ? `↑${delta}` : delta < 0 ? `↓${Math.abs(delta)}` : '=';
   const deltaColor = delta > 0 ? '#f97316' : delta < 0 ? '#22c55e' : 'var(--text-muted)';
 
-  const W = 280, H = 52, PAD_L = 4, PAD_R = 4, PAD_T = 6, PAD_B = 16;
+  // v1.7.1: PAD_B 16→20 so x-axis labels don't collide with HTML footer below
+  const W = 280, H = 60, PAD_L = 4, PAD_R = 4, PAD_T = 8, PAD_B = 20;
   const PW = W - PAD_L - PAD_R;
   const PH = H - PAD_T - PAD_B;
-  const range = maxVal - minVal || 1;
+
+  // v1.7.1: add ≥15% padding above/below so flat series renders centred, not pinned to floor
+  const dataRange = maxVal - minVal;
+  const yPad  = Math.max(Math.ceil(maxVal * 0.15), 3);
+  const yMin  = Math.max(0, minVal - yPad);
+  const yMax2 = maxVal + yPad;
+  const yRange = yMax2 - yMin || 1;
 
   const px = i => PAD_L + (i / (last30.length - 1)) * PW;
-  const py = v => PAD_T + PH - ((v - minVal) / range) * PH;
+  const py = v => PAD_T + PH - ((v - yMin) / yRange) * PH;
 
   const pts      = last30.map((s, i) => `${px(i).toFixed(1)},${py(s.count).toFixed(1)}`).join(' ');
   const firstX   = PAD_L.toFixed(1);
@@ -497,20 +504,26 @@ export function renderSentryTrendCard(label, samples) {
   const baseY    = (PAD_T + PH).toFixed(1);
   const areaPath = `M${firstX},${baseY} L${pts.split(' ').join(' L')} L${lastX},${baseY} Z`;
 
-  // X-axis labels — deduplicated to prevent overlap on 2-sample charts.
-  // rawIdxs for 2 samples = [0, 0, 1]; Set → [0, 1].
+  // X-axis labels — deduped (our fix) + v1.7.1: skip middle when < 40px clearance
   const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const rawIdxs  = [0, Math.floor((last30.length - 1) / 2), last30.length - 1];
   const uniqIdxs = [...new Set(rawIdxs)];
   const anchors  = { 0: 'start', [last30.length - 1]: 'end' };
 
-  const xLabels = uniqIdxs.map(idx => {
+  const xLabels = [];
+  uniqIdxs.forEach((idx, li) => {
+    const xPos = px(idx);
+    // v1.7.1: skip middle label if it crowds either edge (<40px gap)
+    if (li === 1 && uniqIdxs.length === 3) {
+      const gap = Math.min(xPos - px(uniqIdxs[0]), px(uniqIdxs[2]) - xPos);
+      if (gap < 40) return;
+    }
     const d      = days[idx];
     const txt    = idx === last30.length - 1
       ? 'today'
       : `${parseInt(d.slice(8))} ${MONTHS[parseInt(d.slice(5, 7)) - 1]}`;
     const anchor = anchors[idx] || 'middle';
-    return `<text x="${px(idx).toFixed(1)}" y="${H - 2}" text-anchor="${anchor}" fill="var(--text-muted)" font-size="8.5" font-family="system-ui">${esc(txt)}</text>`;
+    xLabels.push(`<text x="${xPos.toFixed(1)}" y="${H - 4}" text-anchor="${anchor}" fill="var(--text-muted)" font-size="8.5" font-family="system-ui">${esc(txt)}</text>`);
   });
 
   const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
@@ -526,6 +539,11 @@ export function renderSentryTrendCard(label, samples) {
     ${xLabels.join('')}
   </svg>`;
 
+  // v1.7.1: "min N max N" footer looks broken when constant — show "stable at N"
+  const footer = dataRange === 0
+    ? `<span>stable at ${minVal}</span>`
+    : `<span>min ${minVal}</span><span>max ${maxVal}</span>`;
+
   return `<div style="${CARD_STYLE}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;">${esc(label)} · last 30 days</span>
@@ -536,8 +554,7 @@ export function renderSentryTrendCard(label, samples) {
     </div>
     ${svg}
     <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:9px;color:var(--text-muted);">
-      <span>min ${minVal}</span>
-      <span>max ${maxVal}</span>
+      ${footer}
     </div>
   </div>`;
 }

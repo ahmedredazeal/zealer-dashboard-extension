@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver">v0.2.6 <span class="cl-date">2026-05-30</span></div>
+      <div class="cl-desc">
+        <strong>Port EM v1.7.0 + v1.7.1:</strong> Sentry issue count fix (was truncating to 7-day window, missing older issues). Trend chart visual fixes: floor pinning, label overflow, middle-label crowding, "stable at N" footer.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver">v0.2.5 <span class="cl-date">2026-05-30</span></div>
       <div class="cl-desc">
         <strong>Sentry trend architecture fix:</strong> recording moved from <code>popup.js</code> to <code>background.js</code> (mirrors EM). Popup sends <code>panel-opened</code> message; background fetches issue count and records the sample. Popup is now read-only for the trend. View label and org slug derived from <code>parseSentryUrl(viewUrl)</code> not the form field.
