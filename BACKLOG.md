@@ -1,85 +1,94 @@
 # Zealer Dashboard — Backlog
 
-Living task list. Items move to `CHANGELOG.md` once shipped and the marker here changes to ✅.
-Phases map to `docs/ARCHITECTURE.md §7`.
+Living task list. Items move to `CHANGELOG.md` once shipped.
+Phases map to `docs/ARCHITECTURE.md §8`.
 
 ---
 
-## 🔧 Immediate / housekeeping
+## ✅ Phase 0 — v0.0.1 — Bootstrap
 
-- [x] Text: "Hello, Zealer 👋" + "Link your accounts, to get started" *(shipped v0.1.1)*
-
----
-
-## Phase 3 — v0.2.0 — Insights
-
-Analytics-first layout: Insights section becomes the top section in the panel,
-above My Tickets. Uses parallel data fetching (Option B) so My Tickets renders
-instantly from the light sprint fetch while Insights fires a second heavier
-fetch (changelog + worklogs) in parallel.
-
-- [x] **SPRINT PROGRESS bar** — big bar at top of Insights, showing % done /
-      in-progress / not-started across all sprint stories (same as EM screenshot).
-- [x] **BURNDOWN chart** — carry `renderBurndownChart` from EM's `src/chart-svg.js`
-      AS-IS. Needs re-fetch with `expand=changelog` for the insights pass.
-- [x] **TIME LOGGED** — engineer's own worklogs, daily-grain variant (brief §6).
-      Single-bar per working day. Requires worklog field in insights fetch.
-- [x] **ESTIMATE VS ACTUAL** — single bar for the engineer (their estimate vs their
-      logged time). Reuse EM's `renderTimesheetChart` adapted for 1 person.
-- [x] **SUPPORT BOARD BREAKDOWN** — show only if engineer has tickets on a support
-      board. Carry EM's `buildSupportBoardChart` logic.
-- [x] **SENTRY TREND** — carry `src/sentry-trend.js` AS-IS + apply both EM fixes:
-      (1) show setup prompt when no view tracked (v1.6.0 fix, not silent hide);
-      (2) show from day 1 with single dot + "Open daily to build trend" prompt
-      (v1.5.9 fix, not requiring 2 data points).
-- [x] **Panel section order**: Insights → My Tickets → Gantt (collapsed) → My Day → My Goals.
-- [ ] Update `docs/ARCHITECTURE.md`, `CHANGELOG.md`, `changelog.html`, `README.md`.
+- [x] MV3 manifest, side panel, service worker, options page
+- [x] Settings: Jira + Sentry test connections, sprint config, theme swatches
+- [x] Identity caching (accountId + displayName on Jira test success)
+- [x] Greeting screen — "Hello, Zealer 👋" + "Link your accounts, to get started."
+- [x] Theme system (light / dark / browser), theme-loader.js
+- [x] Pre-flight release gate (9 checks)
+- [x] 154 tests (AS-IS from EM Dashboard)
 
 ---
 
-## Phase 3b — v0.2.1 — Gantt view
+## ✅ Phase 1 — (absorbed into Phase 0)
 
-> Note: Gantt is NOT in EM Dashboard yet (`gantt-print.html` / `gantt-print.js`
-> are listed in EM's GUIDELINES.md as planned but unimplemented). Building it
-> in Zealer Dashboard first; can be ported to EM later.
-
-- [ ] **Gantt chart** — horizontal bars per sprint ticket, spanning issue
-      `startDate` (or sprint start if none) → `dueDate`.
-- [ ] **No-due-date prompt** — if any assigned ticket has no due date, show
-      inline message: "Add due dates to your tickets to see the full Gantt."
-- [ ] **Export button (⎙)** — opens `gantt-print.html` in a new tab for
-      full-width rendering (same UX pattern as EM's planned export feature).
-- [ ] **Header nav idea** — gantt (📊) + calendar (📅) icon buttons in the app
-      bar; click scrolls to section and expands it. Finalise design in this phase.
-- [ ] `gantt-print.html` + `gantt-print.js` — export page controller.
-- [ ] Update docs.
+- [x] Settings live URL preview (parseSentryUrl)
+- [x] Working-day picker (Sun–Thu default for Zeal)
+- [x] Support board ID field in Sprint config
 
 ---
 
-## Phase 4 — v0.3.0 — My Day
+## ✅ Phase 2 — v0.1.0 — My Tickets
 
-- [ ] Google Calendar today view (meetings + all-day events).
-- [ ] Absence / OOO status from calendar.
-- [ ] Add `identity` permission + `https://www.googleapis.com/*` host permission.
-- [ ] Google [Connect] button in Settings activated (currently disabled).
-- [ ] Update docs.
-
----
-
-## Phase 5 — v0.4.0 — My Goals
-
-- [ ] Leapsome OKRs and dev-plan items surfaced in "My Goals" section.
-- [ ] Leapsome PAT field in Settings activated (currently disabled).
-- [ ] Update docs.
+- [x] Light fetch: active sprint + stories assigned to currentUser
+- [x] Stale-while-revalidate (paint from cache, refresh in background)
+- [x] 30-min auto-refresh timer (EM pattern: elapsed mode → countdown mode)
+- [x] My Tickets section (collapsed by default in Phase 3+)
 
 ---
 
-## Polish / future ideas (no phase assigned yet)
+## ✅ Phase 3 — v0.2.x — Insights
 
-- [ ] Auto-detect sprint board ID from "first sprint with issues assigned to me"
-      (removes the manual board-ID copy-paste from Settings).
-- [ ] Privacy mode toggle in popup header (brief §3, deferred from Phase 0).
-- [ ] Sprint board auto-refresh when sprint changes (use `sprint-cache.js`
-      `detectSprintChange` already in src/).
-- [ ] Alerts inbox (carry EM's `src/alerts.js` AS-IS once rules are defined for engineer scope).
-- [ ] Port Gantt view back to EM Dashboard once built here.
+- [x] **SQUAD INSIGHTS** section (expanded by default)
+  - [x] Sprint Progress bar (all assignees, points or ticket count)
+  - [x] Burndown chart (expand=changelog heavy fetch)
+  - [x] Support Board Breakdown (getKanbanBoardIssues — Kanban-safe)
+  - [x] Sentry Trend sparkline (EM v1.5.9 + v1.6.0 + v1.7.1 fixes)
+- [x] **INDIVIDUAL INSIGHTS** section (expanded by default)
+  - [x] Time Logged — daily-grain sprint view + sprint-grain quarter view
+  - [x] Estimate vs Actual — engineer ratio bar
+  - [x] Sprint / Q1–Q4 time filter toggle (quarter data lazy-fetched)
+- [x] Sentry trend recording moved to background.js (EM architecture)
+- [x] Port EM v1.7.0 (Sentry count fix — statsPeriod from URL)
+- [x] Port EM v1.7.1 (trend chart floor / label / footer visual fixes)
+- [x] Two new modules: engineer-timesheet.js (22 tests) + engineer-charts.js (40 tests)
+
+---
+
+## ✅ Phase 3b — v0.3.0 — Gantt
+
+- [x] **GANTT section** (collapsed by default, lazy render on first expand)
+- [x] `src/gantt.js` — buildGanttSVG, getWorkingDays, dayColIndex, fmtDay, partitionStories (27 tests)
+- [x] All / Mine filter toggle (no refetch — re-renders from cached stories)
+- [x] Today vertical marker line
+- [x] Engineer row highlight (full opacity + primary-colour key label)
+- [x] Unscheduled cluster (tickets without dueDate — dashed full-sprint bars)
+- [x] ⎙ Export button → gantt-print.html in new tab
+- [x] `gantt-print.html` / `gantt-print.js` — full-width export page, All/Mine filter, Print button, resize-responsive
+- [x] 📊 Gantt nav + 📅 My Day nav buttons in app bar
+- [x] `web_accessible_resources` for gantt-print in manifest
+
+---
+
+## 🔮 Phase 4 — v0.4.0 — My Day
+
+- [ ] Google Calendar today view (meetings + all-day events)
+- [ ] Absence / OOO status from calendar
+- [ ] Add `identity` permission + `https://www.googleapis.com/*` host permission
+- [ ] Google [Connect] button in Settings activated (currently disabled)
+- [ ] Update docs
+
+---
+
+## 🔮 Phase 5 — v0.5.0 — My Goals
+
+- [ ] Leapsome OKRs and dev-plan items in "My Goals" section
+- [ ] Leapsome PAT field in Settings activated (currently disabled)
+- [ ] Update docs
+
+---
+
+## Polish / future (no phase yet)
+
+- [ ] Auto-detect sprint board ID (JQL: first sprint with issues assigned to me)
+- [ ] Privacy mode toggle in popup header (brief §3, deferred)
+- [ ] Sprint board auto-refresh when sprint changes (`sprint-cache.js` `detectSprintChange` already in src/)
+- [ ] Alerts inbox (carry EM's `src/alerts.js` once rules are defined for engineer scope)
+- [ ] Port Gantt view back to EM Dashboard

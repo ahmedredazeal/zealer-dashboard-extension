@@ -1,109 +1,116 @@
 # Zealer Dashboard — Chrome Extension
 
-Engineer cockpit for Zeal — your personal sprint progress, time logged,
-tickets, and reliability, in a Chrome side panel.
+Engineer cockpit for Zeal — your personal sprint progress, burndown, Gantt,
+time logged, tickets, and Sentry trend, all in a Chrome side panel.
 
 A sibling project to [EM Dashboard](https://github.com/ahmedredazeal/em-dashboard-extension)
-(written for engineering managers), Zealer Dashboard is the same data backbone
+(written for engineering managers). Zealer Dashboard is the same data backbone
 re-scoped to "just me, today" rather than "my whole squad".
 
 ## Status
 
-**v0.0.1 — Phase 0 bootstrap.** The extension installs, opens a side panel,
-runs a fully functional settings page (Jira + Sentry test connections, sprint
-config, theme), and greets you by name once you connect Jira. Data sections
-(tickets, burndown, time logged, calendar) arrive in later phases — see
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`CHANGELOG.md`](CHANGELOG.md).
+**v0.3.0 — Phase 3b (Gantt).** Full analytics + sprint timeline are live.
+
+| Section              | Status |
+|----------------------|--------|
+| Squad Insights       | ✅ Sprint progress · Burndown · Support Board · Sentry Trend |
+| Individual Insights  | ✅ Time Logged (daily / quarterly) · Estimate vs Actual |
+| Gantt                | ✅ Sprint timeline · All/Mine filter · Export page |
+| My Tickets           | ✅ Engineer's assigned tickets |
+| My Day               | 🔮 Phase 4 — Google Calendar |
+| My Goals             | 🔮 Phase 5 — Leapsome OKRs |
 
 ## Install (developer mode)
 
 1. Clone this repo.
-2. Run `bash pre-flight.sh` once to verify the checkout is sound (optional
-   but recommended).
-3. In Chrome, open `chrome://extensions`, enable **Developer mode**, click
-   **Load unpacked**, and select this folder.
-4. Pin "Zealer Dashboard" to the toolbar. Click the icon — the side panel
-   opens with a welcome screen.
-5. Click **Open settings →**, fill in Jira (URL + email + API token) and click
-   **Test Jira connection**. On success your account ID and display name are
-   cached; the popup will greet you by name from then on.
+2. Open `chrome://extensions`, enable **Developer mode**, click **Load unpacked**,
+   select this folder.
+3. Pin "Zealer Dashboard" to the toolbar. Click the icon — the side panel opens.
+4. Click **⚙ Settings**, fill in:
+   - **Jira** — base URL, email, API token → click **Test Jira connection**
+   - **Sentry** — base URL, org slug, view URL, token (optional)
+   - **Sprint** — board ID (required), support board ID (optional)
+5. Click **Save**. The panel loads your sprint data.
 
 ## Development
 
-The repo uses no build step — everything is plain ES modules served by Chrome.
-That means editing a file and reloading the extension in `chrome://extensions`
-is the entire dev loop.
+No build step — plain ES modules served directly by Chrome.
+Edit a file, reload the extension in `chrome://extensions`.
 
 ```bash
-# Run the unit-test suite (154 tests carried from EM Dashboard)
+# Run all 291 unit tests
 npm test
 
-# Run the full pre-flight (syntax, braces, element audit, CSP, files,
-# icons, version consistency) before tagging a release
+# Run the full release-gate (syntax · element-ID audit · CSP · version consistency)
 npm run preflight
 ```
 
-There is no package to install; `npm test` and `npm run preflight` just shell
-out to `node` and `bash`. You do need Node ≥ 18 and Python 3 (the latter for
-pre-flight's brace-balance and element-audit checks).
+Requires Node ≥ 18. No npm install needed — test runner is plain `node`.
 
 ## Repo layout
 
 ```
 zealer-dashboard-extension/
-├── manifest.json          # MV3 manifest
-├── background.js          # service worker (slim — runs migrations + side panel)
-├── popup.html / popup.js  # side panel UI
+├── manifest.json              MV3 manifest
+├── background.js              Service worker — migrations + Sentry trend recording
+├── popup.html / popup.js      Side panel UI
 ├── settings.html / settings.js
-├── changelog.html         # in-extension changelog viewer
-├── theme-loader.js        # applies theme + version before first paint
-├── styles.css             # CSS-variable theme tokens + base styles
-├── pre-flight.sh          # release-gate checks (must pass before tagging)
-├── package.json           # type=module, test + preflight scripts
-├── CHANGELOG.md           # human-readable changelog
-├── README.md              # this file
-├── icons/                 # 16/32/48/128 PNGs
+├── gantt-print.html / gantt-print.js   Full-width Gantt export page
+├── changelog.html             In-extension changelog
+├── theme-loader.js            Applies theme + version stamp before paint
+├── styles.css                 CSS token system (light / dark / browser)
+├── pre-flight.sh              Release gate (9 checks — must pass before tagging)
+├── package.json               type=module, test + preflight scripts
+├── CHANGELOG.md
+├── BACKLOG.md
+├── icons/                     16 / 32 / 48 / 128 PNGs
 ├── docs/
-│   └── ARCHITECTURE.md    # module map, data flow, "🔮 Future Plan" markers
-├── src/                   # ES modules (shared with EM Dashboard)
-│   ├── jira-api.js
-│   ├── sentry-api.js
-│   ├── sentry-trend.js
-│   ├── worklog-aggregator.js
-│   ├── burndown.js
-│   ├── parsers.js
-│   ├── metrics.js
-│   ├── privacy-mode.js
-│   ├── sprint-cache.js
-│   ├── changelog-parser.js
-│   └── migrations.js      # Zealer-Dashboard-specific (fresh history)
-└── tests/                 # node-runnable test files (no framework)
-    ├── parsers.test.js
-    ├── burndown.test.js
-    ├── burndown-algorithm.test.js
-    ├── sentry-trend.test.js
-    ├── worklog-aggregator.test.js
-    └── integration.test.js
+│   └── ARCHITECTURE.md        Module map, fetch architecture, storage schema
+├── src/
+│   ├── jira-api.js            Jira REST wrappers (AS-IS from EM Dashboard)
+│   ├── sentry-api.js          Sentry REST — getIssuesFromView with viewParams
+│   ├── sentry-trend.js        Daily sample recorder (chrome.storage.sync)
+│   ├── parsers.js             parseSentryUrl, normalizeStory (AS-IS)
+│   ├── burndown.js            Burndown series (AS-IS)
+│   ├── changelog-parser.js    attachCloseTimestamps (AS-IS)
+│   ├── worklog-aggregator.js  Per-member worklog totals (AS-IS)
+│   ├── metrics.js             sprintDayMetrics, velocity helpers (AS-IS)
+│   ├── privacy-mode.js        Privacy helpers (AS-IS, wired in future)
+│   ├── sprint-cache.js        Sprint change detection (AS-IS)
+│   ├── migrations.js          Zealer-specific migration chain
+│   ├── ticket-render.js       renderTicketRow, escapeHtml, deriveProjectKey
+│   ├── engineer-timesheet.js  computeDailyTimesheet, computeQuarterTimesheet, …
+│   ├── engineer-charts.js     All Insights chart renderers (HTML strings)
+│   └── gantt.js               buildGanttSVG, getWorkingDays, partitionStories, …
+└── tests/                     Node-runnable, no framework — 291 tests total
+    ├── parsers.test.js         49 tests
+    ├── burndown.test.js        41 tests
+    ├── burndown-algorithm.test.js  9 tests
+    ├── sentry-trend.test.js   15 tests
+    ├── worklog-aggregator.test.js  28 tests
+    ├── integration.test.js    12 tests
+    ├── ticket-render.test.js  48 tests
+    ├── engineer-timesheet.test.js  22 tests
+    ├── engineer-charts.test.js    40 tests
+    └── gantt.test.js          27 tests
 ```
 
 ## Privacy
 
 - All credentials (Jira API token, Sentry auth token) are stored in
-  `chrome.storage.local`, never sent anywhere except the configured Jira and
-  Sentry instances. There is no Zealer Dashboard backend.
-- Test-connection buttons hit `/rest/api/3/myself` (Jira) and
-  `/api/0/organizations/{org}/` (Sentry). Nothing else is called in v0.0.1.
+  `chrome.storage.local`, never sent anywhere except your configured Jira and Sentry hosts.
+- Sentry daily trend samples are stored in `chrome.storage.sync` (device-synced, 
+  persists across reinstall) — only issue counts, no content.
+- There is no Zealer Dashboard backend. No telemetry.
 
 ## Roadmap
 
-| Phase | Version (target) | Scope |
-|------:|------------------|-------|
-| 0     | v0.0.1 ✓         | Bootstrap, settings, identity caching, greeting |
-| 1     | v0.1.0           | Tighten auth UX (auto-detect board, settings polish) |
-| 2     | v0.2.0           | My Tickets — current sprint tickets assigned to me |
-| 3     | v0.3.0           | Insights row — sprint progress, burndown, support, time logged, est-vs-actual, Sentry trend |
-| 4     | v0.4.0           | My Day — Google Calendar today + absence |
-| 5     | v0.5.0           | My Goals — Leapsome OKRs and dev-plan items |
+| Phase | Version | Status | Scope |
+|------:|---------|--------|-------|
+| 0–1   | v0.0.1–v0.1.1 | ✅ | Bootstrap, settings, identity, My Tickets |
+| 3     | v0.2.x  | ✅     | Squad Insights + Individual Insights |
+| 3b    | v0.3.0  | ✅     | Gantt view + export |
+| 4     | v0.4.0  | 🔮     | My Day — Google Calendar |
+| 5     | v0.5.0  | 🔮     | My Goals — Leapsome |
 
-Detail and rationale live in the parent brief and in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Full detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`CHANGELOG.md`](CHANGELOG.md).
