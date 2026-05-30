@@ -265,3 +265,35 @@ test('escapes XSS in label', () => {
 console.log('');
 console.log(`${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);
+
+// ── Sentry 2-sample dedup fix ──────────────────────────────────────────────
+console.log('\nSentry 2-sample label dedup (regression)');
+
+test('2 samples: no duplicate x-axis labels (was rendering "29May" overlap)', () => {
+  const samples = [
+    { day: '2026-05-29', count: 13 },
+    { day: '2026-05-30', count: 13 },
+  ];
+  const html = renderSentryTrendCard('zeal · View 205221', samples);
+  // Should contain "29 May" exactly once — if labelIdxs not deduped it appears twice
+  const matches = (html.match(/29 May/g) || []).length;
+  assert(matches <= 1, `"29 May" should appear at most once, found ${matches} times`);
+  // Should still contain "today"
+  assertIncludes(html, 'today');
+});
+
+test('3 samples: all 3 labels render without overlap', () => {
+  const samples = [
+    { day: '2026-05-28', count: 10 },
+    { day: '2026-05-29', count: 12 },
+    { day: '2026-05-30', count: 13 },
+  ];
+  const html = renderSentryTrendCard('Production', samples);
+  assertIncludes(html, '28 May');
+  assertIncludes(html, '29 May');
+  assertIncludes(html, 'today');
+});
+
+console.log('');
+console.log(`${pass} passed, ${fail} failed`);
+if (fail > 0) process.exit(1);

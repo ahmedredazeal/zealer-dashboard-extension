@@ -420,18 +420,25 @@ export function renderEstVsActualCard(data, dateRange = '') {
 // ── Sentry Trend Card ──────────────────────────────────────────────────────
 
 /**
- * Sentry trend card. Ported AS-IS from EM buildTrendCardHTML.
+ * Sentry trend card. Faithful port of EM Dashboard buildTrendCardHTML (v1.6.5).
  * Includes both EM fixes:
  *   v1.5.9: shows from day 1 (single data point → dot + "First reading" label)
  *   v1.6.0: no view tracked → shows setup prompt instead of hiding silently
  *
- * @param {string} label   — view label, e.g. "Production Issues"
+ * Additional fix vs EM: deduplicates x-axis label indices.
+ * With only 2 samples, rawIdxs = [0, 0, 1] — rendering "29 May" twice at x=4
+ * with different text-anchors creates overlapping "29May" text in the chart.
+ * Set dedup ensures only unique positions are labelled.
+ *
+ * @param {string} label   — view label e.g. "zeal · View 205221"
  * @param {Array}  samples — [{ day: 'YYYY-MM-DD', count: number }]
  */
 export function renderSentryTrendCard(label, samples) {
-  // v1.6.0 fix: no view → setup prompt
+  const CARD_STYLE = 'padding:10px 12px;background:var(--surface,#11131c);border:1px solid var(--border,rgba(255,255,255,0.05));border-radius:8px;';
+
+  // v1.6.0 fix: no view tracked → setup prompt
   if (!label) {
-    return `<div style="${CARD}">
+    return `<div style="${CARD_STYLE}">
       <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;margin-bottom:6px;">SENTRY TREND</div>
       <div style="font-size:12px;color:var(--text-muted);">Track a Sentry view to see its daily issue count trend here.<br/>
         <span style="color:var(--primary,#6366f1);">Settings → Sentry view URL → Save.</span>
@@ -441,21 +448,21 @@ export function renderSentryTrendCard(label, samples) {
 
   const last30 = (samples || []).slice(-30);
 
-  // v1.5.9 fix: 0 samples → "Open daily to build trend"
-  if (last30.length === 0) {
-    return `<div style="${CARD}font-size:11px;color:var(--text-muted);">
-      <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;margin-bottom:6px;">${esc(label)} TREND</div>
+  // 0 samples → build-trend prompt
+  if (last30.length < 1) {
+    return `<div style="${CARD_STYLE}font-size:11px;color:var(--text-muted);">
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;margin-bottom:6px;">${esc(label)} Trend</div>
       Open the panel daily to build trend history.
     </div>`;
   }
 
-  // v1.5.9 fix: single data point
+  // v1.5.9 fix: single data point — dot + "First reading"
   if (last30.length === 1) {
     const pt = last30[0];
-    return `<div style="${CARD}">
+    return `<div style="${CARD_STYLE}">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;">${esc(label)} · last 30 days</span>
-        <span style="font-size:13px;font-weight:700;color:${CTEXT};">${pt.count} today</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${pt.count} today</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;padding:6px 0;">
         <div style="width:8px;height:8px;background:#6366f1;border-radius:50%;flex-shrink:0;"></div>
@@ -465,7 +472,7 @@ export function renderSentryTrendCard(label, samples) {
     </div>`;
   }
 
-  // Full sparkline chart
+  // Full sparkline chart (2+ samples) — ported AS-IS from EM buildTrendCardHTML
   const counts = last30.map(s => s.count);
   const days   = last30.map(s => s.day);
   const minVal = Math.min(...counts);
@@ -474,51 +481,63 @@ export function renderSentryTrendCard(label, samples) {
   const prev   = last30[last30.length - 2];
   const delta  = today.count - prev.count;
   const deltaStr   = delta > 0 ? `↑${delta}` : delta < 0 ? `↓${Math.abs(delta)}` : '=';
-  const deltaColor = delta > 0 ? '#f97316' : delta < 0 ? '#22c55e' : CT;
+  const deltaColor = delta > 0 ? '#f97316' : delta < 0 ? '#22c55e' : 'var(--text-muted)';
 
-  const W = 272, H = 52, PL = 4, PR = 4, PT = 6, PB = 16;
-  const PW = W - PL - PR, PH2 = H - PT - PB;
+  const W = 280, H = 52, PAD_L = 4, PAD_R = 4, PAD_T = 6, PAD_B = 16;
+  const PW = W - PAD_L - PAD_R;
+  const PH = H - PAD_T - PAD_B;
   const range = maxVal - minVal || 1;
-  const px2 = i => PL + (i / (last30.length - 1)) * PW;
-  const py2 = v => PT + PH2 - ((v - minVal) / range) * PH2;
 
-  const pts = last30.map((s, i) => `${px2(i).toFixed(1)},${py2(s.count).toFixed(1)}`).join(' ');
-  const firstX = PL.toFixed(1), lastX = (PL + PW).toFixed(1), baseY = (PT + PH2).toFixed(1);
+  const px = i => PAD_L + (i / (last30.length - 1)) * PW;
+  const py = v => PAD_T + PH - ((v - minVal) / range) * PH;
+
+  const pts      = last30.map((s, i) => `${px(i).toFixed(1)},${py(s.count).toFixed(1)}`).join(' ');
+  const firstX   = PAD_L.toFixed(1);
+  const lastX    = (PAD_L + PW).toFixed(1);
+  const baseY    = (PAD_T + PH).toFixed(1);
   const areaPath = `M${firstX},${baseY} L${pts.split(' ').join(' L')} L${lastX},${baseY} Z`;
 
-  const labelIdxs = [0, Math.floor((last30.length - 1) / 2), last30.length - 1];
-  const xLabels = labelIdxs.map((idx, li) => {
-    const d = days[idx];
-    const txt = li === 2 ? 'today'
-      : `${parseInt(d.slice(8))} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(d.slice(5,7))-1]}`;
-    const anchor = li === 0 ? 'start' : li === 2 ? 'end' : 'middle';
-    return `<text x="${px2(idx).toFixed(1)}" y="${H - 2}" text-anchor="${anchor}" fill="${CT}" font-size="8.5" font-family="system-ui">${esc(txt)}</text>`;
+  // X-axis labels — deduplicated to prevent overlap on 2-sample charts.
+  // rawIdxs for 2 samples = [0, 0, 1]; Set → [0, 1].
+  const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rawIdxs  = [0, Math.floor((last30.length - 1) / 2), last30.length - 1];
+  const uniqIdxs = [...new Set(rawIdxs)];
+  const anchors  = { 0: 'start', [last30.length - 1]: 'end' };
+
+  const xLabels = uniqIdxs.map(idx => {
+    const d      = days[idx];
+    const txt    = idx === last30.length - 1
+      ? 'today'
+      : `${parseInt(d.slice(8))} ${MONTHS[parseInt(d.slice(5, 7)) - 1]}`;
+    const anchor = anchors[idx] || 'middle';
+    return `<text x="${px(idx).toFixed(1)}" y="${H - 2}" text-anchor="${anchor}" fill="var(--text-muted)" font-size="8.5" font-family="system-ui">${esc(txt)}</text>`;
   });
 
   const svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">
     <defs>
-      <linearGradient id="zst" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="#6366f1" stop-opacity="0.25"/>
         <stop offset="100%" stop-color="#6366f1" stop-opacity="0.02"/>
       </linearGradient>
     </defs>
-    <path d="${areaPath}" fill="url(#zst)"/>
+    <path d="${areaPath}" fill="url(#tg)"/>
     <polyline points="${pts}" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${px2(last30.length - 1).toFixed(1)}" cy="${py2(today.count).toFixed(1)}" r="2.5" fill="#6366f1"/>
+    <circle cx="${px(last30.length - 1).toFixed(1)}" cy="${py(today.count).toFixed(1)}" r="2.5" fill="#6366f1"/>
     ${xLabels.join('')}
   </svg>`;
 
-  return `<div style="${CARD}">
+  return `<div style="${CARD_STYLE}">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.3px;text-transform:uppercase;">${esc(label)} · last 30 days</span>
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:11px;font-weight:700;color:${deltaColor};">${deltaStr} vs yesterday</span>
-        <span style="font-size:13px;font-weight:700;color:${CTEXT};">${today.count}</span>
+        <span style="font-size:11px;font-weight:700;color:${deltaColor};">${esc(deltaStr)} vs yesterday</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text);">${today.count}</span>
       </div>
     </div>
     ${svg}
     <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:9px;color:var(--text-muted);">
-      <span>min ${minVal}</span><span>max ${maxVal}</span>
+      <span>min ${minVal}</span>
+      <span>max ${maxVal}</span>
     </div>
   </div>`;
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.2.4 (2026-05-30) — Sentry chart label fix
+
+**Fixed:**
+- X-axis label overlap ("29May" merging) on Sentry trend charts with 2 data points.
+  Root cause: `rawIdxs = [0, Math.floor((2-1)/2), 2-1] = [0, 0, 1]` — index 0 was
+  used twice, rendering "29 May" at x=4 with both `text-anchor="start"` AND
+  `text-anchor="middle"`, causing the texts to visually merge. Fix: `[...new Set(rawIdxs)]`
+  deduplicates before rendering labels. Regression test added.
+- Faithful re-port of EM's `buildTrendCardHTML` (W=280, gradient id `"tg"`, area path
+  construction matching EM exactly).
+
+---
+
 ## v0.2.3 (2026-05-26) — Support board JQL fix
 
 **Fixed:**
