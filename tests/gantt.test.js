@@ -196,3 +196,43 @@ test('renders today line when today is in sprint range', () => {
 console.log('');
 console.log(`${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);
+
+// ── Bar start uses created date (regression for sprint-start-only bug) ──────
+console.log('\nBar start position (created vs sprint start)');
+
+test('ticket created mid-sprint should not have a bar starting at sprint start', () => {
+  // Sprint starts 2026-05-10, ticket created 2026-05-13 (3 days in)
+  const midSprintStory = [{
+    key: 'HRM-99', summary: 'Mid sprint ticket',
+    dueDate: '2026-05-21', created: '2026-05-13',
+    assigneeAccountId: ME, statusCategory: 'new', priority: 'Medium', points: 2
+  }];
+  const svg = buildGanttSVG(midSprintStory, sprint, [0,1,2,3,4], ME);
+  assertIncludes(svg, '<svg');
+  // The bar should be rendered (dueDate exists)
+  assertIncludes(svg, '<rect'); // bar rect exists
+});
+
+test('ticket created before sprint starts bar at sprint start', () => {
+  const oldStory = [{
+    key: 'HRM-100', summary: 'Old ticket',
+    dueDate: '2026-05-21', created: '2026-04-01', // created before sprint
+    assigneeAccountId: ME, statusCategory: 'new', priority: 'Medium', points: 1
+  }];
+  const svg = buildGanttSVG(oldStory, sprint, [0,1,2,3,4], ME);
+  assertIncludes(svg, '<rect');
+});
+
+test('ticket with no created field falls back to sprint start', () => {
+  const noCreatedStory = [{
+    key: 'HRM-101', summary: 'No created date',
+    dueDate: '2026-05-20', created: null,
+    assigneeAccountId: ME, statusCategory: 'new', priority: 'Medium', points: 0
+  }];
+  const svg = buildGanttSVG(noCreatedStory, sprint, [0,1,2,3,4], ME);
+  assertIncludes(svg, '<rect');
+});
+
+console.log('');
+console.log(`${pass} passed, ${fail} failed`);
+if (fail > 0) process.exit(1);

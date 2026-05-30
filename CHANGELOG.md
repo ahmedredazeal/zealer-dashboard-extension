@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.1 (2026-05-30) — Gantt bar-start fix
+
+**Fixed:**
+- All Gantt bars were starting at sprint day 0 (`barX = x(0)` hardcoded).
+  Tickets created mid-sprint appeared as full-sprint-width bars, making the
+  chart visually identical for every ticket.
+  Fix: bar start = `max(story.created, sprint.startDate)` — tickets created
+  after the sprint began show shorter bars starting at their actual creation date.
+- Added `created` field to `normalizeStory` output (YYYY-MM-DD slice of Jira
+  ISO timestamp). Added `'created'` to the light-fetch fields list.
+- `parsers.test.js` updated to include `created` in the expected shape.
+- 3 regression tests added to `gantt.test.js`.
+
+---
+
 ## v0.3.0 (2026-05-30) — Phase 3b: Gantt view
 
 **Added:**

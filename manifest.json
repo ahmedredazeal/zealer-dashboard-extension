@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Zealer Dashboard",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Engineer cockpit for Zeal — personal sprint progress, time logged, tickets, and reliability, in a Chrome side panel.",
   "author": "Zeal",
   "icons": {

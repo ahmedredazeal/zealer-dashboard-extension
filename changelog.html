@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver">v0.3.1 <span class="cl-date">2026-05-30</span></div>
+      <div class="cl-desc">
+        <strong>Gantt bar-start fix:</strong> bars now start at <code>max(story.created, sprint.startDate)</code> instead of always at sprint day 0. Added <code>created</code> field to <code>normalizeStory</code> + light fetch. 3 regression tests added.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver major">v0.3.0 <span class="cl-date">2026-05-30</span></div>
       <div class="cl-desc">
         <strong>Phase 3b — Gantt view:</strong> sprint timeline with horizontal bars (sprint start → due date), today marker, All/Mine filter toggle, unscheduled cluster, engineer row highlight. Export button opens full-width print page. 📊/📅 nav buttons in app bar. New module: <code>src/gantt.js</code> (27 tests). 291 total tests.

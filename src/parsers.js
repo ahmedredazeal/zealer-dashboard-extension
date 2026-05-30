@@ -129,6 +129,7 @@ export function normalizeStory(issue, storyPointsField) {
     priority,
     points: getStoryPoints(issue, fallbacks),
     type: fields.issuetype?.name || 'Story',
+    created: fields.created ? fields.created.slice(0, 10) : null, // "YYYY-MM-DD"
     dueDate: fields.duedate || null,
     labels: Array.isArray(fields.labels) ? fields.labels : []
   };

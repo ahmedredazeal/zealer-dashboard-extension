@@ -225,8 +225,16 @@ export function buildGanttSVG(stories, sprint, workingDays = [0,1,2,3,4], accoun
 
     // Bar
     if (story.dueDate) {
-      const endColIdx  = dayColIndex(story.dueDate, wdays);
-      const barX       = x(0);
+      // Bar start = max(ticket created date, sprint start) so bars reflect actual work window.
+      // Tickets created before the sprint started appear from sprint day 0.
+      // Tickets created mid-sprint start at their creation date column.
+      const effectiveStart = (story.created && story.created > sprint.startDate)
+        ? story.created
+        : sprint.startDate;
+      const startColIdx = dayColIndex(effectiveStart, wdays);
+      const endColIdx   = dayColIndex(story.dueDate,   wdays);
+
+      const barX       = x(startColIdx);
       const barEndX    = x(endColIdx) + colW;
       const barW       = Math.max(colW, barEndX - barX);
       const barY       = ry + 5;

@@ -177,6 +177,7 @@ test('full Jira issue shape', () => {
       priority: { name: 'High' },
       customfield_10016: 5,
       issuetype: { name: 'Story' },
+      created: '2026-05-10T09:00:00.000+0300',
       duedate: '2026-06-01'
     }
   };
@@ -190,6 +191,7 @@ test('full Jira issue shape', () => {
     priority: 'High',
     points: 5,
     type: 'Story',
+    created: '2026-05-10',
     dueDate: '2026-06-01',
     labels: []
   });

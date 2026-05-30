@@ -124,7 +124,7 @@ async function fetchLightData(settings) {
   }
 
   const jql = `sprint = ${sprint.id} AND issuetype not in subTaskIssueTypes() ORDER BY priority DESC, updated DESC`;
-  const result = await client._search({ jql, fields: ['summary','status','assignee','priority',spf,'customfield_10016','customfield_10026','duedate','labels'], maxResults: 100 });
+  const result = await client._search({ jql, fields: ['summary','status','assignee','priority',spf,'customfield_10016','customfield_10026','duedate','labels','created'], maxResults: 100 });
   const stories = (result.issues || []).map(i => normalizeStory(i, spf));
 
   return { sprint, stories, storyPointsField: spf, client };
