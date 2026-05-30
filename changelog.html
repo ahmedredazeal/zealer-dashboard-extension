@@ -18,6 +18,13 @@
     <h1 style="font-size:20px;margin-bottom:24px;">Zealer Dashboard — Changelog</h1>
 
     <div class="cl-row">
+      <div class="cl-ver">v0.2.5 <span class="cl-date">2026-05-30</span></div>
+      <div class="cl-desc">
+        <strong>Sentry trend architecture fix:</strong> recording moved from <code>popup.js</code> to <code>background.js</code> (mirrors EM). Popup sends <code>panel-opened</code> message; background fetches issue count and records the sample. Popup is now read-only for the trend. View label and org slug derived from <code>parseSentryUrl(viewUrl)</code> not the form field.
+      </div>
+    </div>
+
+    <div class="cl-row">
       <div class="cl-ver">v0.2.4 <span class="cl-date">2026-05-30</span></div>
       <div class="cl-desc">
         <strong>Sentry chart label fix:</strong> "29May" overlap on 2-sample charts fixed by deduplicating x-axis label indices. Re-ported <code>renderSentryTrendCard</code> from EM's <code>buildTrendCardHTML</code> (W=280, gradient id "tg"). Regression test added.

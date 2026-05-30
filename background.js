@@ -11,6 +11,53 @@
  */
 
 import { runMigrations } from './src/migrations.js';
+import { JiraClient }       from './src/jira-api.js';
+import { SentryClient }     from './src/sentry-api.js';
+import { parseSentryUrl }   from './src/parsers.js';
+import { recordTrendSample } from './src/sentry-trend.js';
+
+// Run migrations on service worker init (idempotent — flagged per migration)
+runMigrations().catch(err => console.warn('[background] Migration failed:', err.message));
+
+/**
+ * Record today's Sentry trend sample from settings.
+ * Mirrors EM's fetchSentryData recording logic exactly:
+ *   - Uses parseSentryUrl to derive viewId + projectIds + environment from the URL
+ *   - Uses settings.sentry.org as orgSlug (same as EM's settings.sentry.org field)
+ *   - Records only if viewId is valid and API call succeeds
+ * Called on every panel open so samples accumulate passively.
+ */
+async function fetchAndRecordSentryTrend(settings) {
+  const sentry = settings?.sentry;
+  if (!sentry?.viewUrl || !sentry?.token) {
+    console.log('[background] Sentry not configured — skipping trend recording');
+    return;
+  }
+
+  const parsed = parseSentryUrl(sentry.viewUrl);
+  if (!parsed?.viewId) {
+    console.warn('[background] Could not parse Sentry view URL:', sentry.viewUrl);
+    return;
+  }
+
+  const { viewId, projectIds, environment } = parsed;
+  const env = environment || 'production'; // mirror EM: default to production
+
+  try {
+    const client = new SentryClient(
+      sentry.baseUrl || parsed.baseUrl || 'https://sentry.io',
+      sentry.org || parsed.orgSlug || '',
+      '',
+      sentry.token
+    );
+    const issues = await client.getIssuesFromView(viewId, projectIds, env);
+    const count  = Array.isArray(issues) ? issues.length : 0;
+    await recordTrendSample(viewId, count);
+    console.log(`[background] Sentry trend recorded: view ${viewId} → ${count} issues`);
+  } catch (err) {
+    console.warn('[background] Sentry trend recording failed:', err.message);
+  }
+}
 
 // Run migrations on service worker init (idempotent — flagged per migration)
 runMigrations().catch(err => console.warn('[background] Migration failed:', err.message));
@@ -33,7 +80,7 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 /**
- * Message router (Phase 0: only settings-updated relay).
+ * Message router (Phase 2+: settings-updated relay + Sentry trend recording).
  *
  * Per brief §4 lesson #4: return undefined for fire-and-forget patterns.
  * Returning true without calling sendResponse causes Chrome to log
@@ -42,9 +89,20 @@ chrome.runtime.onStartup.addListener(async () => {
 chrome.runtime.onMessage.addListener((msg, _sender, _sendResponse) => {
   if (msg?.type === 'settings-updated') {
     // Settings page saved — popup may want to re-read storage.
-    // No reply needed; popup listens for the same broadcast directly,
-    // but we log here for debuggability.
     console.log('[background] settings-updated received');
     return; // fire-and-forget — explicit return undefined
+  }
+
+  if (msg?.type === 'panel-opened') {
+    // Popup opened — record today's Sentry trend sample in the background.
+    // Mirrors EM's architecture: background records, popup only reads.
+    chrome.storage.local.get(['settings']).then(r => {
+      if (r.settings) {
+        fetchAndRecordSentryTrend(r.settings).catch(e =>
+          console.warn('[background] Sentry trend error:', e.message)
+        );
+      }
+    }).catch(() => {});
+    return; // fire-and-forget
   }
 });

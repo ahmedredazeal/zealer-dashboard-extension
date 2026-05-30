@@ -12,12 +12,12 @@
 
 import { JiraClient }               from './src/jira-api.js';
 import { normalizeStory }           from './src/parsers.js';
+import { parseSentryUrl }           from './src/parsers.js';
 import { runMigrations }            from './src/migrations.js';
 import { attachCloseTimestamps }    from './src/changelog-parser.js';
 import { computeBurndownSeries, sprintDayLabels } from './src/burndown.js';
 import { sprintBurndownPrediction } from './src/metrics.js';
-import { recordTrendSample, getTrendSamples } from './src/sentry-trend.js';
-import { SentryClient }             from './src/sentry-api.js';
+import { getTrendSamples }            from './src/sentry-trend.js';
 import {
   extractEngineerWorklogs,
   computeDailyTimesheet,
@@ -199,34 +199,22 @@ async function fetchQuarterData(settings, quarter) {
 }
 
 // ── Sentry trend ───────────────────────────────────────────────────────────
+// Read-only — recording happens in background.js (EM architecture).
+// background.js receives 'panel-opened' message and calls recordTrendSample.
 async function loadSentryTrend(settings) {
-  const sentry  = settings.sentry;
-  const viewId  = sentry?.viewId;
-  // Use org slug for the label; fall back to viewId
-  const viewLabel = sentry?.org ? `${sentry.org} · View ${viewId || ''}` : (viewId ? `View ${viewId}` : '');
+  const sentry = settings.sentry;
+  const viewId = sentry?.viewId;
 
-  if (!viewId || !sentry?.token) {
+  if (!viewId) {
     inject('sentry-trend-container', renderSentryTrendCard('', []));
     return;
   }
 
-  // Record today's sample: fetch live count → recordTrendSample(viewId, count)
-  // Bug fix: SentryClient(baseUrl, orgSlug, projectSlug, token) — 4 args
-  // Bug fix: recordTrendSample(viewId, count) — not (client, org, viewId, projectIds)
-  try {
-    const sc    = new SentryClient(
-      sentry.baseUrl || 'https://sentry.io',
-      sentry.org || '',
-      null,
-      sentry.token
-    );
-    const env    = sentry.environment || undefined; // undefined → API default ('production')
-    const issues = await sc.getIssuesFromView(viewId, sentry.projectIds || [], env);
-    const count  = Array.isArray(issues) ? issues.length : 0;
-    await recordTrendSample(viewId, count);
-  } catch (e) {
-    console.warn('[popup] Sentry sample failed:', e.message);
-  }
+  // Derive the view label from the URL (mirrors EM: label comes from URL parse, not form field)
+  const parsed    = parseSentryUrl(sentry.viewUrl || '');
+  const viewLabel = parsed?.orgSlug
+    ? `${parsed.orgSlug} · View ${viewId}`
+    : `View ${viewId}`;
 
   const samples = await getTrendSamples(viewId).catch(() => []);
   inject('sentry-trend-container', renderSentryTrendCard(viewLabel, samples));
@@ -462,6 +450,9 @@ async function refreshDashboard() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 async function boot() {
   await runMigrations().catch(e => console.warn('[popup] Migration:', e.message));
+
+  // Tell background to record today's Sentry trend sample (EM architecture: bg records, popup reads)
+  chrome.runtime.sendMessage({ type: 'panel-opened' }).catch(() => {});
 
   document.getElementById('settings-btn')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
   document.getElementById('auth-goto-settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());

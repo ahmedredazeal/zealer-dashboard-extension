@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.2.5 (2026-05-30) — Sentry trend architecture fix
+
+**Changed (architectural):**
+- Sentry trend recording moved from `popup.js` to `background.js` — mirrors
+  EM Dashboard exactly. `popup.js` is now read-only for the trend chart
+  (`getTrendSamples` only); `background.js` receives a `panel-opened` message
+  on each popup boot and calls `fetchAndRecordSentryTrend` (fetches issue count
+  via `getIssuesFromView`, then calls `recordTrendSample(viewId, count)`).
+- `parseSentryUrl` is now used to derive `orgSlug`, `viewId`, `projectIds`, and
+  `environment` directly from the stored view URL at recording time — same
+  approach as EM background.js. This makes recording robust to form-field
+  mismatches.
+- `SentryClient` and `recordTrendSample` imports removed from `popup.js`.
+- View label in the trend card now derived from `parseSentryUrl(viewUrl).orgSlug`
+  (URL-authoritative) rather than the `sentry.org` form field.
+
+**Why this matters:** with the old popup-records approach, a single Sentry API
+failure (rate limit, expired token, network blip) silently skipped that day's
+recording. The user would see "First reading" indefinitely if the failure
+persisted. With background recording, the error is logged and the popup still
+renders whatever samples exist in storage, exactly as EM does.
+
+---
+
 ## v0.2.4 (2026-05-30) — Sentry chart label fix
 
 **Fixed:**
