@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.3.0 (2026-05-30) — Phase 3b: Gantt view
+
+**Added:**
+- **GANTT section** in the panel (collapsed by default). Renders instantly from
+  `myTicketsCache` — no extra Jira fetch. Expands to show a full sprint timeline.
+- **`src/gantt.js`** — pure SVG Gantt renderer (DOM-free, Node-testable):
+  `buildGanttSVG(stories, sprint, workingDays, accountId, opts)`,
+  `getWorkingDays`, `dayColIndex`, `fmtDay`, `partitionStories`. 27 unit tests.
+- **All/Mine filter toggle** in the Gantt section header. Switches without
+  refetch — re-renders from the already-loaded story array.
+- **Unscheduled cluster** — tickets without a due date appear below a separator
+  with a dashed full-sprint bar and an inline "add due dates" prompt.
+- **Today line** — vertical dashed amber marker through all Gantt rows.
+- **Engineer highlight** — own rows rendered at full opacity with a primary-
+  colour key label and subtle left-border; others at 65% opacity.
+- **⎙ Export button** in the Gantt header — opens `gantt-print.html` in a new
+  tab. Full-width SVG, All/Mine filter, 🖨 Print button, responsive to window
+  resize. No inline event handlers (CSP-compliant).
+- **📊 Gantt nav button** in the app bar — expands Gantt section and scrolls to it.
+- **📅 My Day nav button** in the app bar — scrolls to My Day section (wired now
+  for Phase 4).
+- `gantt-print.html` + `gantt-print.js` — export page, reads `myTicketsCache`
+  from `chrome.storage.local`, re-renders on window resize.
+- `web_accessible_resources` in `manifest.json` for the print page.
+
+**Tests:** 291 total (264 carried + 27 Gantt), all passing. Pre-flight 9/9.
+
+---
+
 ## v0.2.6 (2026-05-30) — Port EM v1.7.0 + v1.7.1 Sentry fixes
 
 **Fixed (ported from EM Dashboard):**

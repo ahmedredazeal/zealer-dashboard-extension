@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Zealer Dashboard",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "Engineer cockpit for Zeal — personal sprint progress, time logged, tickets, and reliability, in a Chrome side panel.",
   "author": "Zeal",
   "icons": {
@@ -32,6 +32,12 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["gantt-print.html", "gantt-print.js", "src/gantt.js", "theme-loader.js", "styles.css"],
+      "matches":   ["<all_urls>"]
+    }
+  ],
   "options_page": "settings.html",
   "minimum_chrome_version": "114"
 }

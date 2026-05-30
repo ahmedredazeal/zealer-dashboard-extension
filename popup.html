@@ -56,10 +56,12 @@
         <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#60a5fa"/>
       </svg>
       <span class="app-bar-title">Zealer Dashboard</span>
-      <span class="app-bar-version" id="app-version">v0.2.6</span>
+      <span class="app-bar-version" id="app-version">v0.3.0</span>
     </div>
     <div class="app-bar-right">
-      <button class="icon-btn" id="settings-btn" title="Settings">⚙</button>
+      <button class="icon-btn" id="gantt-nav-btn"   title="Sprint Gantt">📊</button>
+      <button class="icon-btn" id="myday-nav-btn"   title="My Day">📅</button>
+      <button class="icon-btn" id="settings-btn"    title="Settings">⚙</button>
     </div>
   </div>
 
@@ -183,20 +185,32 @@
           </div>
         </div>
 
-        <!-- ── GANTT placeholder (Phase 3b) ─────────────────────── -->
-        <div class="section">
-          <div class="section-label">
-            Gantt
-            <span style="font-size:9px;color:var(--primary);background:var(--surface-raised);
-                         padding:1px 6px;border-radius:10px;margin-left:4px;font-weight:500;">🔮 Phase 3b</span>
+        <!-- ── GANTT ──────────────────────────────────────────── -->
+        <div class="section" id="gantt-section">
+          <div id="gantt-header"
+               class="section-label"
+               style="display:flex;align-items:center;justify-content:space-between;
+                      cursor:pointer;user-select:none;">
+            <span>GANTT</span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <!-- All / Mine filter toggle -->
+              <div id="gantt-filter-bar" style="display:flex;gap:3px;">
+                <button class="timefilter-btn active" id="gantt-filter-all"  data-filter="all"  style="padding:2px 8px;font-size:10px;">All</button>
+                <button class="timefilter-btn"        id="gantt-filter-mine" data-filter="mine" style="padding:2px 8px;font-size:10px;">Mine</button>
+              </div>
+              <!-- Export button -->
+              <button class="icon-btn" id="gantt-export-btn" title="Open in new tab (⎙)" style="font-size:13px;">⎙</button>
+              <span id="gantt-chevron" style="color:var(--text-muted);font-size:12px;">&#9654;</span>
+            </div>
           </div>
-          <div class="card">
-            <div class="card-subtitle">Sprint timeline view with per-ticket due-date bars.</div>
+          <!-- Gantt body (collapsed by default) -->
+          <div id="gantt-body" style="margin-top:8px;display:none;overflow-x:auto;">
+            <div id="gantt-chart-container"></div>
           </div>
         </div>
 
         <!-- ── MY DAY placeholder (Phase 4) ─────────────────────── -->
-        <div class="section">
+        <div class="section" id="myday-section">
           <div class="section-label">
             My Day
             <span style="font-size:9px;color:var(--primary);background:var(--surface-raised);

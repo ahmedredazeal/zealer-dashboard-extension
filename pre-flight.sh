@@ -146,6 +146,9 @@ REQUIRED_FILES=(
   "src/ticket-render.js"
   "src/engineer-timesheet.js"
   "src/engineer-charts.js"
+  "src/gantt.js"
+  "gantt-print.html"
+  "gantt-print.js"
   "src/migrations.js"
 )
 MISSING=0
@@ -208,6 +211,7 @@ TEST_FILES=(
   "tests/ticket-render.test.js"
   "tests/engineer-timesheet.test.js"
   "tests/engineer-charts.test.js"
+  "tests/gantt.test.js"
 )
 TOTAL_PASS=0
 TOTAL_FAIL=0

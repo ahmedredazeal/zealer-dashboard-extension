@@ -11,13 +11,13 @@
  */
 
 import { JiraClient }               from './src/jira-api.js';
-import { normalizeStory }           from './src/parsers.js';
-import { parseSentryUrl }           from './src/parsers.js';
+import { normalizeStory,
+         parseSentryUrl }           from './src/parsers.js';
 import { runMigrations }            from './src/migrations.js';
 import { attachCloseTimestamps }    from './src/changelog-parser.js';
-import { computeBurndownSeries, sprintDayLabels } from './src/burndown.js';
-import { sprintBurndownPrediction } from './src/metrics.js';
-import { getTrendSamples }            from './src/sentry-trend.js';
+import { computeBurndownSeries }    from './src/burndown.js';
+import { buildGanttSVG }            from './src/gantt.js';
+import { getTrendSamples }          from './src/sentry-trend.js';
 import {
   extractEngineerWorklogs,
   computeDailyTimesheet,
@@ -366,6 +366,7 @@ function wireCollapsibles() {
   [
     { headerId:'squad-insights-header',       bodyId:'squad-insights-body',       chevronId:'squad-insights-chevron',       initOpen:true  },
     { headerId:'individual-insights-header',  bodyId:'individual-insights-body',  chevronId:'individual-insights-chevron',  initOpen:true  },
+    { headerId:'gantt-header',                bodyId:'gantt-body',                chevronId:'gantt-chevron',                initOpen:false },
     { headerId:'my-tickets-header',           bodyId:'my-tickets-body',           chevronId:'my-tickets-chevron',           initOpen:false },
   ].forEach(({ headerId, bodyId, chevronId, initOpen }) => {
     const hdr     = document.getElementById(headerId);
@@ -379,6 +380,10 @@ function wireCollapsibles() {
       const open = body.style.display !== 'none';
       body.style.display = open ? 'none' : '';
       if (chevron) chevron.innerHTML = open ? '&#9654;' : '&#9660;';
+      // Render Gantt on first expand (lazy — no data cost, just SVG build)
+      if (!open && headerId === 'gantt-header' && _lightData && _settings) {
+        renderGanttSection(_lightData, _settings);
+      }
     });
   });
 }
@@ -400,6 +405,51 @@ function showErrorBanner(msg) {
     document.getElementById('screen-container')?.prepend(b);
   }
   b.innerHTML = `<strong>⚠ Refresh failed:</strong> ${escapeHtml(msg)}<br/><small style="color:var(--text-muted);">Check your Jira credentials in Settings.</small>`;
+}
+
+// ── Gantt state ────────────────────────────────────────────────────────────
+let _ganttFilter = 'all'; // 'all' | 'mine'
+
+function renderGanttSection(lightData, settings) {
+  const container = document.getElementById('gantt-chart-container');
+  if (!container) return;
+
+  const { sprint, stories } = lightData;
+  const accountId   = settings.jira?.accountId;
+  const workingDays = settings.sprint?.workingDays || [0,1,2,3,4];
+
+  const svg = buildGanttSVG(stories, sprint, workingDays, accountId, {
+    filterMine: _ganttFilter === 'mine',
+    width: 560,
+  });
+
+  const checkList = (_ganttFilter === 'mine' && accountId)
+    ? stories.filter(s => s.assigneeAccountId === accountId)
+    : stories;
+  const noDate  = checkList.filter(s => !s.dueDate);
+  const notice  = noDate.length > 0
+    ? `<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">
+        ⓘ ${noDate.length} ticket${noDate.length > 1 ? 's have' : ' has'} no due date — shown unscheduled below.
+        <a href="${(settings.jira?.baseUrl || '').replace(/\/$/, '')}/jira" target="_blank"
+           style="color:var(--primary,#6366f1);text-decoration:none;">Add in Jira →</a>
+      </div>`
+    : '';
+
+  container.innerHTML = svg + notice;
+}
+
+function wireGanttFilter() {
+  ['gantt-filter-all','gantt-filter-mine'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // prevent toggling the collapsible header
+      _ganttFilter = btn.dataset.filter;
+      document.getElementById('gantt-filter-all')?.classList.toggle('active',  _ganttFilter === 'all');
+      document.getElementById('gantt-filter-mine')?.classList.toggle('active', _ganttFilter === 'mine');
+    });
+  });
 }
 
 // ── Refresh ────────────────────────────────────────────────────────────────
@@ -428,6 +478,7 @@ async function refreshDashboard() {
     showScreen('screen-home');
     wireCollapsibles();
     wireTimeFilterButtons();
+    wireGanttFilter();
 
     // Then heavy fetch
     const insightsData = await fetchInsightsData(_settings, lightData.sprint, lightData.storyPointsField);
@@ -458,8 +509,28 @@ async function boot() {
   document.getElementById('auth-goto-settings')?.addEventListener('click', () => chrome.runtime.openOptionsPage());
   document.getElementById('context-refresh')?.addEventListener('click', refreshDashboard);
 
+  // Gantt nav button — expand and scroll to Gantt section
+  document.getElementById('gantt-nav-btn')?.addEventListener('click', () => {
+    const body    = document.getElementById('gantt-body');
+    const chevron = document.getElementById('gantt-chevron');
+    if (body) { body.style.display = ''; if (chevron) chevron.innerHTML = '&#9660;'; }
+    document.getElementById('gantt-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // My Day nav button — scroll to My Day section
+  document.getElementById('myday-nav-btn')?.addEventListener('click', () => {
+    document.getElementById('myday-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // Gantt export — open gantt-print.html in new tab
+  document.getElementById('gantt-export-btn')?.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent toggling the collapsible header
+    chrome.tabs.create({ url: chrome.runtime.getURL('gantt-print.html') });
+  });
+
   wireCollapsibles();
   wireTimeFilterButtons();
+  wireGanttFilter();
 
   const result   = await chrome.storage.local.get(['settings']);
   const settings = result.settings || {};
@@ -486,6 +557,7 @@ async function boot() {
     showScreen('screen-home');
     wireCollapsibles();
     wireTimeFilterButtons();
+    wireGanttFilter();
     startRefreshTimer(lightCache.fetchedAt);
   } else {
     setLoading('squad-loading-pill', true);
@@ -510,6 +582,7 @@ async function boot() {
     showScreen('screen-home');
     wireCollapsibles();
     wireTimeFilterButtons();
+    wireGanttFilter();
 
     // Heavy fetch
     const insightsData = await fetchInsightsData(settings, lightData.sprint, lightData.storyPointsField);
